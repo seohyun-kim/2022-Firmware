@@ -1,5 +1,5 @@
 ﻿  week_02_2022-03-14.c
-C:\Users\selen\source\repos\Firmware_2022\Firmware_2022\week_02_2022-03-14.c(13,6): warning C4101: 'x' :참조되지 않은 지역 변수입니다.
-C:\Users\selen\source\repos\Firmware_2022\Firmware_2022\week_02_2022-03-14.c(46,7): warning C4101: 'c4' :참조되지 않은 지역 변수입니다.
-C:\Users\selen\source\repos\Firmware_2022\Firmware_2022\week_02_2022-03-14.c(18): warning C4716: 'd': 값을 반환해야 합니다.
+C:\Users\selen\source\repos\Firmware_2022\Firmware_2022\week_02_2022-03-14.c(14,6): warning C4101: 'x' :참조되지 않은 지역 변수입니다.
+C:\Users\selen\source\repos\Firmware_2022\Firmware_2022\week_02_2022-03-14.c(57,7): warning C4101: 'c4' :참조되지 않은 지역 변수입니다.
+C:\Users\selen\source\repos\Firmware_2022\Firmware_2022\week_02_2022-03-14.c(20): warning C4716: 'd': 값을 반환해야 합니다.
   Firmware_2022.vcxproj -> C:\Users\selen\source\repos\Firmware_2022\Debug\Firmware_2022.exe
