@@ -18,5 +18,8 @@
     <ClCompile Include="week_02_2022-03-14.c">
       <Filter>소스 파일</Filter>
     </ClCompile>
+    <ClCompile Include="week_02_2022-03-15.c">
+      <Filter>소스 파일</Filter>
+    </ClCompile>
   </ItemGroup>
 </Project>
