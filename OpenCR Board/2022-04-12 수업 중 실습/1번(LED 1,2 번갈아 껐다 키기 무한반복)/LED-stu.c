@@ -120,8 +120,8 @@ void MyApp()
 
 		MyDelay(5);
 
-		// 2번 LED ON
-		*((V_UINT32*)(0x40021018U)) |= 0x00000020U; //[offset: 0x18] BSRR을 reset (5번 비트)
+		// 2번 LED OFF
+		*((V_UINT32*)(0x40021018U)) |= 0x00000020U; //[offset: 0x18] BSRR을 set (5번 비트)
 
 		MyDelay(5);
 	}
