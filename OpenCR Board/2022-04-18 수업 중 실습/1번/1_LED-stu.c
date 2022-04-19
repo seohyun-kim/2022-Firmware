@@ -84,14 +84,14 @@ void hwInit(void)
 }
 
 int CheckClockStatus(unsigned int GPIOPort){
-	return (*((V_UINT32*)(0x40023830U)) == (0x00000001U << GPIOPort));
-
+	return (( *( (V_UINT32*)(0x40023830U) ) & (0x00000001U << GPIOPort) ) > 0);
 }
 
-void ClockEnable(unsigned char GPIOPort){
+void ClockEnable(unsigned int GPIOPort){
 	// Clock Enable
 	*((V_UINT32*)(0x40023830U)) |= ( 0x00000001U << GPIOPort );
 }
+
 
 void MyDelay(unsigned int n){ // 10이 들어오면 1초가 되도록
 
