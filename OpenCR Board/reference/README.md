@@ -23,6 +23,10 @@
 
 <br/>  
 
-## 6.4.7 BSR R
+## 6.4.7 BSR R  
+- Reset에 1을 주면 Digital 0을 내보냄
+- Set에 1을 주면 Digital 1을 내보냄
+- 둘 다 1이 되어있으면 Set이 우선  
+
 ![image](https://user-images.githubusercontent.com/61939286/164884866-06eae265-97a1-4126-bbb7-1a48f7c7eb26.png)
 ![image](https://user-images.githubusercontent.com/61939286/164884871-e9f096f9-d6de-498f-8fa9-c624dce08b4e.png)
