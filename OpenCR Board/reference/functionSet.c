@@ -233,10 +233,12 @@ void LEDOnOff(UINT32 No){
 
 		switch(LEDOption){
 			case 0x00: // 해당 LED 끄기
-				TurnOffOneLED(4-i);
+				DurationArr[3-i] = -1; // 항상 OFF 를 -1으로 표시
+				//TurnOffOneLED(4-i);
 				break;
 			case 0x0F: // 해당 LED 켜기
-				TurnOnOneLED(4-i);
+				DurationArr[3-i] = 0; // 항상 ON 를 0으로 표시
+				//TurnOnOneLED(4-i);
 				break;
 			default: // 0 또는 F가 아닌 경우는 듀레이션 주기
 				DurationArr[3-i] = Duration;
@@ -251,14 +253,20 @@ void LEDOnOff(UINT32 No){
 
 
 void LEDOnDuration(UINT32 DurationArr[]){
+
+	// Duration 배열에서 가장 큰 값 찾기
 	int MaxDuration = 0;
   for (int i = 0; i < NumofLEDs; i++) {
       if (DurationArr[i] > MaxDuration) MaxDuration = DurationArr[i];
   }
+
 	while(MaxDuration > 0){
 		for(int i = 0 ; i < NumofLEDs ; i++){
-			if(DurationArr[i] > 0) {
+			if(DurationArr[i] >= 0) { // 항상 ON(0)인 경우, Duration이 있는 경우
 				TurnOnOneLED(i+1);
+			}
+			if(DurationArr[i] == -1) { // 항상 OFF(-1)인 경우
+				TurnOffOneLED(i+1);
 			}
 		}
 		MyDelay(5);
