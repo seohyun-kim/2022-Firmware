@@ -1,10 +1,71 @@
-// 타입과 상수 정의
+//============== m y d e f =================
+// typedef
 typedef volatile unsigned int  V_UINT32;
 typedef unsigned int UINT32;
+
+// base address
+#define GPIOG_BASEADDRESS 0x40021800U
+#define GPIOE_BASEADDRESS 0x40021000U
+#define RCC_BASEADDRESS   0x40023800U
+
+//offset
+#define MODEROFFSET  0x00000000U
+#define OSPEEDOFFSET 0x00000008U
+#define PUPDROFFSET  0x0000000CU
+#define BSRROFFSET   0x00000018U
+#define RCCOFFSET    0x00000030U
+
+// 1. MODER OPTION
+#define INPUTMODE   0x00000000U   // reset state
+#define OUTPUTMODE  0x00000001U   // general purpose output mode
+#define ALTFUNCMODE 0x00000002U   // Alternate function mode
+#define ANALOGMODE  0x00000003U   // analog mode
+
+// 2. OSPEEDR OPTION
+#define LOWSPEED      0x00000000U
+#define MEDIUMSPEED   0x00000001U
+#define HIGHSPEED     0x00000002U
+#define VERYHIGHSPEED 0x00000003U
+
+// 3. PUPDR OPTION
+#define NOPUPD   0x00000000U
+#define PULLUP   0x00000001U
+#define PULLDOWN 0x00000002U
+//#define RESERVED 0x00000003U
+
+// 3. BSRR OPTION
+#define SETRESET 0x00000001U
+
+// GPIO Port bit
+#define GPIOE_BIT 4
+#define GPIOG_BIT 6
+/* |  10bit  |  9bit  |  8bit  |  7bit  |  6bit  |  5bit  |  4bit  |  3bit  |  2bit  |  1bit  |  0bit  |
+	 | GPIO K  | GPIO J | GPIO I | GPIO H | GPIO G | GPIO F | GPIO E | GPIO D | GPIO C | GPIO B | GPIO A | */
+
+// etc
 #define RATE 3600000
 #define HALFBYTE 4
 #define BYTE 8
 #define NumofLEDs 4
+
+/*
+	[SYS_USER_LED 1]  |  PG 12  |
+	[SYS_USER_LED 2]  |  PE  5  |
+	[SYS_USER_LED 3]  |  PE  4  |
+	[SYS_USER_LED 4]  |  PG 10  |
+
+	< Base address >   ------ p.70
+	GPIO G : 0x4002 1800  | AHB 1
+	GPIO E : 0x4002 1000  | AHB 1
+
+	< Offset >  ------------ p.208-210
+	MODER   : 0x00   |  {00:input}       {01: GP Output} {10: Alternate Function}  {11: Analog}
+	OSPEEDR : 0x08   |  {00: Low Speed}  {01: Medium}    {10: High}                {11: Very high}
+	PUPDR   : 0x0C   |  {00: No}         {01: Pull-up}   {10: Pull-down}           {11: Reserved}
+	BSRR    : 0X18   |  {Bits 31:16 RESET}   {Bits 15:0 SET}
+*/
+
+//============== m y d e f =================
 
 
 #ifndef SRC_MAIN_H_
@@ -19,83 +80,47 @@ static void SystemClock_Config(void);
 #endif
 
 
-/*
-	[SYS_USER_LED 1]  |  PG 12  |  
-	[SYS_USER_LED 2]  |  PE  5  |
-	[SYS_USER_LED 3]  |  PE  4  |
-	[SYS_USER_LED 4]  |  PG 10  |
-
-	< Base address >   ------ p.70
-	GPIO G : 0x4002 1800  | AHB 1
-	GPIO E : 0x4002 1000  | AHB 1
-
-	< Offset >  ------------ p.208-210
-	MODER   : 0x00   |  {00:input}       {01: GP Output} {10: Alternate Function}  {11: Analog}
-	OSPEEDR : 0x08   |  {00: Low Speed}  {01: Medium}    {10: High}                {11: Very high}
-	PUPDR   : 0x0C   |  {00: No}         {01: Pull-up}   {10: Pull-down}           {11: Reserved}
-	BSRR    : 0X18   |  {Bits 31:16 RESET}   {Bits 15:0 SET}
-
-
-
-
-*/
-
-
-
-
-
-
-
-// 함수 선언
 void hwInit(void);
 void MyApp();
 
-int  CheckClockStatus(unsigned int GPIOPort);
-	/* 해당 port bit에 clock이 켜져있는지 체크(0~10)
-	   |  10bit  |  9bit  |  8bit  |  7bit  |  6bit  |  5bit  |  4bit  |  3bit  |  2bit  |  1bit  |  0bit  |
-	*  | GPIO K  | GPIO J | GPIO I | GPIO H | GPIO G | GPIO F | GPIO E | GPIO D | GPIO C | GPIO B | GPIO A | 
-	*/
-void ClockEnable(unsigned int GPIOPort); 
+
+// ============== my functions ===================
+int  CheckClockStatus(UINT32 GPIOPort);
+	// 해당 GPIO의 Clock이 켜져있는지 체크하는 함수 ( 0:OFF, 1:ON)
+
+void ClockEnable(UINT32 GPIOPort);
 	// 해당 port bit에 clock을 Enable 시킴
 
-void MyDelay(unsigned int n);
+void MyDelay(UINT32 n);
 	// n* 100ms 동안 dalay를 줌 (n=5 : 0.5sec)
 
 void LEDOnOff(UINT32 No);
-	/* LED 1~4를 제어하는 함수 (LED 4개가 동시에 작동해야함)
-	*   0X    00     00      00      00
-		   [LED 1] [LED 2] [LED 3] [LED 4]
-		총 4byte의 UINT32 No 변수에서 1Byte씩 잘라 상위비트부터 제어하는 LED의 속성을 나타냄
-
-		각 Byte의 상위 4bit는 해당 LED의 속성을 의미함 :
-			- {0 -> OFF} 하위 4bit 와는 상관없이 무조건 OFF
-			- {F ->  ON} 하위 4bit 와는 상관없이 무조건 ON
-			- {기타 -> Duration을 줌}
-
-		각 Byte의 하위 4bit는 해당 LED의 Blink 횟수를 의미함 :
-			- {n -> 1초를 주기로 LED ON/OFF를 n회 반복함}
-			- 상위 4bit가 0과 F가 아닌 수에서만 유의미한 값임
+	/* LED 4개를 1byte 씩 사용하여 제어하는 함수
+			-
 	*/
 
 void LEDOnDuration(UINT32 DurationArr[]);
-	// LED Duration의 값이 담긴 4개짜리 배열이 입력되고, 각 LED를 동시에  Duration만큼 1초 주기로 깜빡임
 
-void TurnOnOneLED(unsigned char No);
-/*	1~4 사이의 숫자 No가 입력되고, 해당 LED를 켠다.
-	- SetOneLED() 함수가 내부에서 호출 됨
-*/
+void TurnOnOneLED(UINT32 No);
+	/* 1~4 사이의 숫자 No가 입력되고, 해당 LED를 켠다.
+			- SetOneLED() 함수가 내부에서 호출 됨*/
 
-void TurnOffOneLED(unsigned char No);
-/*	1~4 사이의 숫자 No가 입력되고, 해당 LED를 끈다.
-	- SetOneLED() 함수가 내부에서 호출 됨
-*/
+void TurnOffOneLED(UINT32 No);
+	// 1~4 사이의 숫자 No가 입력되고, 해당 LED를 끈다.
 
-void SetOneLED(unsigned char No);
-/*	1~4 사이의 숫자 No가 입력되고, 해당 LED를 Setting
-	- MODER   output 모드(01) 설정
-	- OSPEEDR   very high(11) 설정
-	- PUPDR를     pull up(01) 설정
-*/
+void SetOneLED(UINT32 No);
+	/* 1~4 사이의 숫자 No가 입력되고, 해당 LED를 Setting
+			- MODER    output 모드(01)
+			- OSPEEDR  very high(11)
+			- PUPDR    pull up(01)   */
+
+UINT32 getBaseAddrforLED(UINT32 LEDNo);
+	// LED 1~4의 BaseAddress를 리턴
+
+UINT32 getPortforLED(UINT32 LEDNo);
+	// LED 1~4의 GPIO port 번호를 리턴
+// ============== my functions ===================
+
 
 static void SystemClock_Config(void)
 {
@@ -160,8 +185,8 @@ void MyApp()
 {
 
 	//Clock Enable
-	if(!CheckClockStatus(4))	ClockEnable(4);
-	if(!CheckClockStatus(6))	ClockEnable(6);
+	if(!CheckClockStatus(GPIOE_BIT))	ClockEnable(GPIOE_BIT);
+	if(!CheckClockStatus(GPIOG_BIT))	ClockEnable(GPIOG_BIT);
 
 	LEDOnOff(0xF0F0F1FF); // 모든 LED ON
 	MyDelay(5); // 0.5초 딜레이
@@ -181,21 +206,16 @@ void MyApp()
 }
 
 
-int CheckClockStatus(unsigned int GPIOPort){
-	return (( *( (V_UINT32*)(0x40023830U) ) & (0x00000001U << GPIOPort) ) > 0);
-	/*	0x00000001U 를 GPIO port의 bit만큼 shift 한 값과
-		클락제어 위치의 값을 & 연산하여 해당 bit가 1인지 확인
-		해당 bit가 1이라면 그 결과는 0보다 클 것임 : true(1)  return
-		해당 bit가 0이라면 그 결과는 0이므로       : false(0) return
-	*/
+int CheckClockStatus(UINT32 GPIOPort){
+	return (( *( (V_UINT32*)(RCC_BASEADDRESS + RCCOFFSET) ) & (0x00000001U << GPIOPort) ) > 0);
 }
 
-void ClockEnable(unsigned int GPIOPort){
+void ClockEnable(UINT32 GPIOPort){
 	// Clock Enable
-	*((V_UINT32*)(0x40023830U)) |= ( 0x00000001U << GPIOPort );
+	*((V_UINT32*)((RCC_BASEADDRESS + RCCOFFSET))) |= ( 0x00000001U << GPIOPort );
 }
 
-void MyDelay(unsigned int n){ // 10이 들어오면 1초가 되도록
+void MyDelay(UINT32 n){ // 10이 들어오면 1초가 되도록
 	V_UINT32 delay;
 	for ( delay = 0; delay <= n*RATE; delay++); //
 }
@@ -226,108 +246,85 @@ void LEDOnOff(UINT32 No){
 		LEDOptionMask <<= BYTE;
 		DurationMask  <<= BYTE;
 	}
-
-	LEDOnDuration(DurationArr);
+  LEDOnDuration(DurationArr);
 }
 
 
 void LEDOnDuration(UINT32 DurationArr[]){
-
-	// DurationArr 의 각 원소 중 가장 큰 값 찾기
 	int MaxDuration = 0;
-	for (int i = 0; i < NumofLEDs; i++) {
-		if (DurationArr[i] > MaxDuration) MaxDuration = DurationArr[i];
-	}
-
-	// MaxDuration 만큼 반복
+  for (int i = 0; i < NumofLEDs; i++) {
+      if (DurationArr[i] > MaxDuration) MaxDuration = DurationArr[i];
+  }
 	while(MaxDuration > 0){
 		for(int i = 0 ; i < NumofLEDs ; i++){
 			if(DurationArr[i] > 0) {
 				TurnOnOneLED(i+1);
 			}
 		}
-		MyDelay(10);
+		MyDelay(5);
 		for(int i = 0 ; i < NumofLEDs ; i++){
 			if(DurationArr[i] > 0){
 				TurnOffOneLED(i+1);
 				DurationArr[i]--;
 			}
 		}
-		MyDelay(10);
+		MyDelay(5);
 		MaxDuration--;
 	}
 }
 
-void TurnOnOneLED(unsigned char No){ // NO 는 1~4 사이의 정수
-	switch(No){
-		case 1: //PG 12
-			SetOneLED(1);
-			*((V_UINT32*)(0x40021818U)) |= 0x10000000U; //[offset: 0x18] BSRR을 reset
-			break;
-		case 2: //PE5
-			SetOneLED(2);
-			*((V_UINT32*)(0x40021018U)) |= 0x00200000U; //[offset: 0x18] BSRR을 reset (5번 비트)
-			break;
-		case 3: //PE 4
-			SetOneLED(3);
-			*((V_UINT32*)(0x40021018U)) |= 0x00100000U; //[offset: 0x18] BSRR을 reset (20번 비트)
-			break;
-		case 4:
-			SetOneLED(4);
-			*((V_UINT32*)(0x40021818U)) |= 0x04000000U; //[offset: 0x18] BSRR을 reset (26번 비트)
-			break;
-	}
+void TurnOnOneLED(UINT32 No){ // NO 는 1~4 사이의 정수
+	SetOneLED(No);
+	// BSRR reset
+	*((V_UINT32*)(getBaseAddrforLED(No)+BSRROFFSET))  |= (SETRESET << (getPortforLED(No)+16));
+
 }
 
-void TurnOffOneLED(unsigned char No){ // NO 는 1~4 사이의 정수
-	switch(No){
-		case 1: //PG 12
-			SetOneLED(1);
-			*((V_UINT32*)(0x40021818U)) |= 0x00001000U; //[offset: 0x18] BSRR을 set
-			break;
-		case 2: //PE5
-			SetOneLED(2);
-			*((V_UINT32*)(0x40021018U)) |= 0x00000020U; //[offset: 0x18] BSRR을 set (5번 비트)
-			break;
-		case 3: //PE 4
-			SetOneLED(3);
-			*((V_UINT32*)(0x40021018U)) |= 0x00000010U; //[offset: 0x18] BSRR을 set (4번 비트)
-			break;
-		case 4:
-			SetOneLED(4);
-			*((V_UINT32*)(0x40021818U)) |= 0x00000400U; //[offset: 0x18] BSRR을 set (10번 비트)
-			break;
-	}
+void TurnOffOneLED(UINT32 No){ // NO 는 1~4 사이의 정수
+	// BSRR set
+	*((V_UINT32*)(getBaseAddrforLED(No)+BSRROFFSET))  |= (SETRESET << getPortforLED(No));
 }
 
-void SetOneLED(unsigned char No){
-	switch(No){
+
+void SetOneLED(UINT32 No){
+
+	//MODER OUTPUTMODE
+	*((V_UINT32*)(getBaseAddrforLED(No)+MODEROFFSET))  |= (OUTPUTMODE << (getPortforLED(No)*2) );
+
+	//OSPEED VERY HIGH
+	*((V_UINT32*)(getBaseAddrforLED(No)+OSPEEDOFFSET)) |= (VERYHIGHSPEED << (getPortforLED(No)*2));
+
+	//PUPDR PULL UP
+	*((V_UINT32*)(getBaseAddrforLED(No)+PUPDROFFSET))  |= (PULLUP << (getPortforLED(No)*2));
+}
+
+
+UINT32 getBaseAddrforLED(UINT32 LEDNo){ // LED 1~4
+
+	switch(LEDNo){
 		case 1:
-			// SET LED 1
-			*((V_UINT32*)(0x40021800U)) |= 0x01000000U; //[offset: 0x00] MODER12를 output 모드(01)을 설정
-			*((V_UINT32*)(0x40021808U)) |= 0x03000000U; //[offset: 0x08] OSPEEDR를 veryhigh(11)로 설정
-			*((V_UINT32*)(0x4002180cU)) |= 0x01000000U; //[offset: 0xoc] PUPDR를 pull up(01)을 설정
-			break;
-		case 2:
-			// SET LED2
-			*((V_UINT32*)(0x40021000U)) |= 0x00000400U; //[offset: 0x00] MODER5를 output 모드(01)을 설정 (10~11번 비트)
-			*((V_UINT32*)(0x40021008U)) |= 0x00000C00U; //[offset: 0x08] OSPEEDR를 veryhigh(11)로 설정 (10~11번 비트)
-			*((V_UINT32*)(0x4002100cU)) |= 0x01000400U; //[offset: 0xoc] PUPDR를 pull up(01)을 설정 (10~11번 비트)
-			break;
-		case 3:
-			//SET LED3
-			*((V_UINT32*)(0x40021000U)) |= 0x00000100U; //[offset: 0x00] MODER4 (E) output 모드(01)을 설정 (8~9번 비트)
-			*((V_UINT32*)(0x40021008U)) |= 0x00000300U; //[offset: 0x08] OSPEEDR 4를 veryhigh(11)로 설정 (8~9번 비트)
-			*((V_UINT32*)(0x4002100cU)) |= 0x00000100U; //[offset: 0xoc] PUPDR를 pull up(01)을 설정(8~9번 비트)
-			break;
 		case 4:
-			//SET LED4
-			*((V_UINT32*)(0x40021800U)) |= 0x00100000U; //[offset: 0x00] MODER10 (G) output 모드(01)을 설정 (20~21번 비트)
-			*((V_UINT32*)(0x40021808U)) |= 0x00300000U; //[offset: 0x08] OSPEEDR 10를 veryhigh(11)로 설정 (20~21번 비트)
-			*((V_UINT32*)(0x4002180cU)) |= 0x00100000U; //[offset: 0xoc] PUPDR를 pull up(01)을 설정 (20~21번 비트)
-			break;
+			return GPIOG_BASEADDRESS;
+		case 2:
+		case 3:
+			return GPIOE_BASEADDRESS;
 	}
 }
+
+UINT32 getPortforLED(UINT32 LEDNo){ // LED 1~4
+		switch(LEDNo){
+			case 1:
+				return 12;
+			case 2:
+				return 5;
+			case 3:
+				return 4;
+			case 4:
+				return 10;
+		}
+}
+
+
 
 
 
