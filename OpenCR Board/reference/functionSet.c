@@ -4,6 +4,7 @@ typedef volatile unsigned int  V_UINT32;
 typedef unsigned int UINT32;
 
 // base address
+#define GPIOC_BASEADDRESS 0x40020800U
 #define GPIOG_BASEADDRESS 0x40021800U
 #define GPIOE_BASEADDRESS 0x40021000U
 #define RCC_BASEADDRESS   0x40023800U
@@ -14,6 +15,7 @@ typedef unsigned int UINT32;
 #define PUPDROFFSET  0x0000000CU
 #define BSRROFFSET   0x00000018U
 #define RCCOFFSET    0x00000030U
+#define IDROFFSET    0x00000010U
 
 // 1. MODER OPTION
 #define INPUTMODE   0x00000000U   // reset state
@@ -39,6 +41,7 @@ typedef unsigned int UINT32;
 // GPIO Port bit
 #define GPIOE_BIT 4
 #define GPIOG_BIT 6
+#define GPIOC_BIT 2
 /* |  10bit  |  9bit  |  8bit  |  7bit  |  6bit  |  5bit  |  4bit  |  3bit  |  2bit  |  1bit  |  0bit  |
 	 | GPIO K  | GPIO J | GPIO I | GPIO H | GPIO G | GPIO F | GPIO E | GPIO D | GPIO C | GPIO B | GPIO A | */
 
@@ -114,11 +117,25 @@ void SetOneLED(UINT32 No);
 			- OSPEEDR  very high(11)
 			- PUPDR    pull up(01)   */
 
+UINT32 GetIDRforButton(UINT32 ButtonNo);
+	// Button Switch에 대한 IDR값을 가져옴
+
 UINT32 getBaseAddrforLED(UINT32 LEDNo);
 	// LED 1~4의 BaseAddress를 리턴
 
 UINT32 getPortforLED(UINT32 LEDNo);
 	// LED 1~4의 GPIO port 번호를 리턴
+
+UINT32 getBaseAddrforButton(UINT32 ButtonNo);
+	// ButtonSwitch 1~2의 BaseAddress를 리턴
+
+UINT32 getPortforButton(UINT32 ButtonNo);
+	// ButtonSwitch 1~2의 GPIO port 번호를 리턴
+
+
+void TurnOnOneLEDWhenButtonPushed(UINT32 ButtonNo, UINT32 LEDNo);
+void SetOneButton(UINT32 No);
+
 // ============== my functions ===================
 
 
@@ -187,21 +204,37 @@ void MyApp()
 	//Clock Status Check & Enable
 	if(!CheckClockStatus(GPIOE_BIT))	ClockEnable(GPIOE_BIT);
 	if(!CheckClockStatus(GPIOG_BIT))	ClockEnable(GPIOG_BIT);
+	if(!CheckClockStatus(GPIOC_BIT))	ClockEnable(GPIOC_BIT);
 
-	LEDOnOff(0xF0F0F1FF); // 모든 LED ON
-	MyDelay(5); // 0.5초 딜레이
 
-	LEDOnOff(0x0000010F); // 모든 LED OFF
-	MyDelay(5); // 0.5초 딜레이
+	SetOneButton(1);
+	while(1){
 
-	LEDOnOff(0x15FF2A01); // LED 2번은 계속 ON, LED4는 계속 OFF 상태에서 LED 1과 3을 동시에 각 5회, 10회씩 깜빡임(1초딜레이)
-	MyDelay(5); // 0.5초 딜레이
+		if(GetIDRforButton(2) > 0){ // 버튼 클릭 시
+			TurnOnOneLED(1);
+			//LEDOnOff(0xF0F0F1FF);
+		}else{
+			TurnOffOneLED(1);
+			//LEDOnOff(0x00000000);
+		}
+	}
 
-	LEDOnOff(0x0F0F0F0F); // 모든 LED OFF
-	MyDelay(5); // 0.5초 딜레이
 
-	LEDOnOff(0xA3138323); // 모든 LED 동시에 3회씩 깜빡임(1초 딜레이)
-	MyDelay(5); // 0.5초 딜레이
+
+//	LEDOnOff(0xF0F0F1FF); // 모든 LED ON
+//	MyDelay(5); // 0.5초 딜레이
+//
+//	LEDOnOff(0x0000010F); // 모든 LED OFF
+//	MyDelay(5); // 0.5초 딜레이
+//
+//	LEDOnOff(0x15FF2A01); // LED 2번은 계속 ON, LED4는 계속 OFF 상태에서 LED 1과 3을 동시에 각 5회, 10회씩 깜빡임(1초딜레이)
+//	MyDelay(5); // 0.5초 딜레이
+//
+//	LEDOnOff(0x0F0F0F0F); // 모든 LED OFF
+//	MyDelay(5); // 0.5초 딜레이
+//
+//	LEDOnOff(0xA3138323); // 모든 LED 동시에 3회씩 깜빡임(1초 딜레이)
+//	MyDelay(5); // 0.5초 딜레이
 
 }
 
@@ -291,6 +324,20 @@ void TurnOffOneLED(UINT32 No){ // NO 는 1~4 사이의 정수
 	*((V_UINT32*)(getBaseAddrforLED(No)+BSRROFFSET))  |= (SETRESET << getPortforLED(No));
 }
 
+void TurnOnOneLEDWhenButtonPushed(UINT32 ButtonNo, UINT32 LEDNo){
+	SetOneButton(ButtonNo);	//Button Setup
+	while(1){
+		if(GetIDRforButton(ButtonNo) > 0){ // 버튼 클릭 시
+			TurnOnOneLED(LEDNo);
+		}else{
+			TurnOffOneLED(LEDNo);
+		}
+	}
+}
+
+UINT32 GetIDRforButton(UINT32 ButtonNo){
+	return (*((V_UINT32*)(getBaseAddrforButton(ButtonNo)+IDROFFSET))) & (0x00000001U << getPortforButton(ButtonNo));
+}
 
 void SetOneLED(UINT32 No){
 	//MODER OUTPUTMODE
@@ -302,6 +349,18 @@ void SetOneLED(UINT32 No){
 	//PUPDR PULL UP
 	*((V_UINT32*)(getBaseAddrforLED(No)+PUPDROFFSET))  |= (PULLUP << (getPortforLED(No)*2));
 }
+
+void SetOneButton(UINT32 No){
+	//MODER INPUTMODE
+	*((V_UINT32*)(getBaseAddrforButton(No)+MODEROFFSET))  |= (INPUTMODE << (getPortforButton(No)*2) );
+
+	//OSPEED VERY HIGH
+	*((V_UINT32*)(getBaseAddrforButton(No)+OSPEEDOFFSET)) |= (VERYHIGHSPEED << (getPortforButton(No)*2));
+
+	//PUPDR PULL UP
+	*((V_UINT32*)(getBaseAddrforButton(No)+PUPDROFFSET))  |= (PULLUP << (getPortforButton(No)*2));
+}
+
 
 
 UINT32 getBaseAddrforLED(UINT32 LEDNo){ // LED 1~4
@@ -328,6 +387,23 @@ UINT32 getPortforLED(UINT32 LEDNo){ // LED 1~4
 		}
 }
 
+UINT32 getBaseAddrforButton(UINT32 ButtonNo){ // LED 1~4
+	switch(ButtonNo){
+		case 1:
+			return GPIOC_BASEADDRESS;
+		case 2:
+			return GPIOG_BASEADDRESS;
+	}
+}
+
+UINT32 getPortforButton(UINT32 ButtonNo){ // LED 1~4
+		switch(ButtonNo){
+			case 1:
+				return 12; // PC12
+			case 2:
+				return 3; // PG3
+		}
+}
 
 
 
