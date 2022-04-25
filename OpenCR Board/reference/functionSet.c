@@ -59,6 +59,7 @@ typedef unsigned int UINT32;
 	[SYS_USER_LED 2]  |  PE  5  |
 	[SYS_USER_LED 3]  |  PE  4  |
 	[SYS_USER_LED 4]  |  PG 10  |
+	[SYS_STS_LED]     |  PG  9  |
 
 	< Base address >   ------ p.70
 	GPIO G : 0x4002 1800  | AHB 1
@@ -102,23 +103,33 @@ void MyDelay(UINT32 n);
 
 void LEDOnOff(UINT32 No);
 	/* LED 4개를 1byte 씩 사용하여 제어하는 함수
-			-
+			- 1Byte 씩 [LED 1][LED 2][LED 3][LED 4]
 	*/
 
 void RunLEDOnDuration(int DurationArr[]);
+	// LED Duration 만큼 Blink하는 동작 수행
 
 void TurnOnOneLED(UINT32 No);
 	/* 1~4 사이의 숫자 No가 입력되고, 해당 LED를 켠다.
 			- SetOneLED() 함수가 내부에서 호출 됨*/
 
 void TurnOffOneLED(UINT32 No);
-	// 1~4 사이의 숫자 No가 입력되고, 해당 LED를 끈다.
+	// 1~5 사이의 숫자 No가 입력되고, 해당 LED를 끈다.
 
 void SetOneLED(UINT32 No);
-	/* 1~4 사이의 숫자 No가 입력되고, 해당 LED를 Setting
+	/* 1~5 사이의 숫자 No가 입력되고, 해당 LED를 Setting
 			- MODER    output 모드(01)
 			- OSPEEDR  very high(11)
 			- PUPDR    pull up(01)   */
+
+void TurnOnOneLEDWhenButtonPushed(UINT32 ButtonNo, UINT32 LEDNo);
+	// 해당 버튼이 클릭되면 해당 LED를 키는 함수
+
+void SetOneButton(UINT32 No);
+	/* 1~2 사이의 숫자 No가 입력되고, 해당 Button을 Setting
+		- MODER    output 모드(01)
+		- OSPEEDR  very high(11)
+		- PUPDR    pull up(01)   */
 
 UINT32 GetIDRforButton(UINT32 ButtonNo);
 	// Button Switch에 대한 IDR값을 가져옴
@@ -134,11 +145,6 @@ UINT32 getBaseAddrforButton(UINT32 ButtonNo);
 
 UINT32 getPortforButton(UINT32 ButtonNo);
 	// ButtonSwitch 1~2의 GPIO port 번호를 리턴
-
-
-void TurnOnOneLEDWhenButtonPushed(UINT32 ButtonNo, UINT32 LEDNo);
-void SetOneButton(UINT32 No);
-
 // ============== my functions ===================
 
 
@@ -210,8 +216,9 @@ void MyApp()
 	if(!CheckClockStatus(GPIOC_BIT))	ClockEnable(GPIOC_BIT);
 
 
-	SetOneButton(1);
-	TurnOnOneLEDWhenButtonPushed(2,3);
+	//SetOneButton(1);
+	//TurnOnOneLEDWhenButtonPushed(2,3);
+
 
 		//LEDOnOff(0xF0F0F1FF); // 모든 LED ON
 //	MyDelay(5); // 0.5초 딜레이
@@ -360,10 +367,11 @@ void SetOneButton(UINT32 No){
 }
 
 
-UINT32 getBaseAddrforLED(UINT32 LEDNo){ // LED 1~4
+UINT32 getBaseAddrforLED(UINT32 LEDNo){ // LED 1~5 (5는 status)
 	switch(LEDNo){
 		case 1:
 		case 4:
+		case 5:
 			return GPIOG_BASEADDRESS;
 		case 2:
 		case 3:
@@ -373,14 +381,11 @@ UINT32 getBaseAddrforLED(UINT32 LEDNo){ // LED 1~4
 
 UINT32 getPortforLED(UINT32 LEDNo){ // LED 1~4
 		switch(LEDNo){
-			case 1:
-				return 12;
-			case 2:
-				return 5;
-			case 3:
-				return 4;
-			case 4:
-				return 10;
+			case 1: return 12;
+			case 2: return  5;
+			case 3: return  4;
+			case 4: return 10;
+			case 5: return  9; // SYS_STS_LED
 		}
 }
 
