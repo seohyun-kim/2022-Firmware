@@ -93,7 +93,7 @@ void MyApp();
 
 // ============== my functions ===================
 int  CheckClockStatus(UINT32 GPIOPort);
-	// 해당 GPIO의 Clock이 켜져있는지 체크하는 함수 ( 0:OFF, 1:ON)
+	// 해당 GPIO의 Clock이 켜져있는지 체크하는 함수 (0:OFF, 1:ON)
 
 void ClockEnable(UINT32 GPIOPort);
 	// 해당 port bit에 clock을 Enable 시킴
@@ -389,21 +389,17 @@ UINT32 getPortforLED(UINT32 LEDNo){ // LED 1~4
 		}
 }
 
-UINT32 getBaseAddrforButton(UINT32 ButtonNo){ // LED 1~4
+UINT32 getBaseAddrforButton(UINT32 ButtonNo){ // BTN 1~2
 	switch(ButtonNo){
-		case 1:
-			return GPIOC_BASEADDRESS;
-		case 2:
-			return GPIOG_BASEADDRESS;
+		case 1: return GPIOC_BASEADDRESS;
+		case 2: return GPIOG_BASEADDRESS;
 	}
 }
 
-UINT32 getPortforButton(UINT32 ButtonNo){ // LED 1~4
+UINT32 getPortforButton(UINT32 ButtonNo){ // BTN 1~2
 		switch(ButtonNo){
-			case 1:
-				return 12; // PC12
-			case 2:
-				return 3; // PG3
+			case 1: return 12; // PC 12
+			case 2: return 3;  // PG  3
 		}
 }
 
