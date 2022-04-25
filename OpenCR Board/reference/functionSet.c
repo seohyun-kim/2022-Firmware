@@ -17,6 +17,9 @@ typedef unsigned int UINT32;
 #define RCCOFFSET    0x00000030U
 #define IDROFFSET    0x00000010U
 
+// masking
+#define AndMaskforTwoBit 0x00000003U
+
 // 1. MODER OPTION
 #define INPUTMODE   0x00000000U   // reset state
 #define OUTPUTMODE  0x00000001U   // general purpose output mode
@@ -208,20 +211,9 @@ void MyApp()
 
 
 	SetOneButton(1);
-	while(1){
+	TurnOnOneLEDWhenButtonPushed(2,3);
 
-		if(GetIDRforButton(2) > 0){ // 버튼 클릭 시
-			TurnOnOneLED(1);
-			//LEDOnOff(0xF0F0F1FF);
-		}else{
-			TurnOffOneLED(1);
-			//LEDOnOff(0x00000000);
-		}
-	}
-
-
-
-//	LEDOnOff(0xF0F0F1FF); // 모든 LED ON
+		//LEDOnOff(0xF0F0F1FF); // 모든 LED ON
 //	MyDelay(5); // 0.5초 딜레이
 //
 //	LEDOnOff(0x0000010F); // 모든 LED OFF
@@ -341,26 +333,31 @@ UINT32 GetIDRforButton(UINT32 ButtonNo){
 
 void SetOneLED(UINT32 No){
 	//MODER OUTPUTMODE
-	*((V_UINT32*)(getBaseAddrforLED(No)+MODEROFFSET))  |= (OUTPUTMODE << (getPortforLED(No)*2) );
+	*((V_UINT32*)(getBaseAddrforLED(No)+MODEROFFSET))  &= ~(AndMaskforTwoBit << (getPortforLED(No)*2)); // 해당 2bit를 00으로 초기화
+	*((V_UINT32*)(getBaseAddrforLED(No)+MODEROFFSET))  |=  (OUTPUTMODE       << (getPortforLED(No)*2)); // 원하는 값을 덮어 씀
 
 	//OSPEED VERY HIGH
-	*((V_UINT32*)(getBaseAddrforLED(No)+OSPEEDOFFSET)) |= (VERYHIGHSPEED << (getPortforLED(No)*2));
+	*((V_UINT32*)(getBaseAddrforLED(No)+OSPEEDOFFSET)) &= ~(AndMaskforTwoBit << (getPortforLED(No)*2)); // 해당 2bit를 00으로 초기화
+	*((V_UINT32*)(getBaseAddrforLED(No)+OSPEEDOFFSET)) |=  (VERYHIGHSPEED    << (getPortforLED(No)*2)); // 원하는 값을 덮어 씀
 
 	//PUPDR PULL UP
-	*((V_UINT32*)(getBaseAddrforLED(No)+PUPDROFFSET))  |= (PULLUP << (getPortforLED(No)*2));
+	*((V_UINT32*)(getBaseAddrforLED(No)+PUPDROFFSET))  &= ~(AndMaskforTwoBit << (getPortforLED(No)*2)); // 해당 2bit를 00으로 초기화
+	*((V_UINT32*)(getBaseAddrforLED(No)+PUPDROFFSET))  |=  (PULLUP           << (getPortforLED(No)*2)); // 원하는 값을 덮어 씀
 }
 
 void SetOneButton(UINT32 No){
 	//MODER INPUTMODE
-	*((V_UINT32*)(getBaseAddrforButton(No)+MODEROFFSET))  |= (INPUTMODE << (getPortforButton(No)*2) );
+	*((V_UINT32*)(getBaseAddrforButton(No)+MODEROFFSET))  &= ~(AndMaskforTwoBit << (getPortforButton(No)*2)); // 해당 2bit를 00으로 초기화
+	*((V_UINT32*)(getBaseAddrforButton(No)+MODEROFFSET))  |=  (INPUTMODE        << (getPortforButton(No)*2)); // 원하는 값을 덮어 씀
 
 	//OSPEED VERY HIGH
-	*((V_UINT32*)(getBaseAddrforButton(No)+OSPEEDOFFSET)) |= (VERYHIGHSPEED << (getPortforButton(No)*2));
+	*((V_UINT32*)(getBaseAddrforButton(No)+OSPEEDOFFSET))	&= ~(AndMaskforTwoBit << (getPortforButton(No)*2)); // 해당 2bit를 00으로 초기화
+	*((V_UINT32*)(getBaseAddrforButton(No)+OSPEEDOFFSET)) |=  (VERYHIGHSPEED    << (getPortforButton(No)*2)); // 원하는 값을 덮어 씀
 
 	//PUPDR PULL UP
-	*((V_UINT32*)(getBaseAddrforButton(No)+PUPDROFFSET))  |= (PULLUP << (getPortforButton(No)*2));
+	*((V_UINT32*)(getBaseAddrforButton(No)+PUPDROFFSET))  &= ~(AndMaskforTwoBit << (getPortforButton(No)*2)); // 해당 2bit를 00으로 초기화
+	*((V_UINT32*)(getBaseAddrforButton(No)+PUPDROFFSET))  |=  (PULLUP           << (getPortforButton(No)*2)); // 원하는 값을 덮어 씀
 }
-
 
 
 UINT32 getBaseAddrforLED(UINT32 LEDNo){ // LED 1~4
