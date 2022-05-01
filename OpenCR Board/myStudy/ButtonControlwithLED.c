@@ -222,7 +222,6 @@ void MyApp()
 
 	InitGPIO(); // LED 4개 관련 클럭 모두 Enable, 모두 OFF로 초기화
 
-	SetOneButton(1);
 	TurnOnOneLEDWhenButtonPushed(2,3); // 버튼 2가 눌리면 LED3을 ON
 
 }
@@ -255,119 +254,6 @@ void InitGPIO(){
 	}
 }
 
-void MostOneLED(UINT32 LED1, UINT32 LED2, UINT32 LED3, UINT32 LED4){
-
-	int NumArrLED[4]={0,0,0,0};
-
-	NumArrLED[0] = GetNumofOne(LED1);
-	NumArrLED[1] = GetNumofOne(LED2);
-	NumArrLED[2] = GetNumofOne(LED3);
-	NumArrLED[3] = GetNumofOne(LED4);
-
-	int MaxLED = 0;
-	int MaxLEDIndex = 0;
-  for (int i = 0; i < 4; i++) {
-      if (NumArrLED[i] > MaxLED){
-      	MaxLED = NumArrLED[i];
-      	MaxLEDIndex = i; // i = 0~3 임
-      }
-  }
-
-  TurnOnOneLED(MaxLEDIndex+1);
-
-}
-
-
-int GetNumofOne(UINT32 LED){
-	int count = 0;
-	UINT32 maskOneBit = 0x00000001U;
-	for(int i =0; i < 32 ; i ++){
-		if(LED & maskOneBit > 0){
-			count++;
-		}
-		maskOneBit >>= 1;
-	}
-	return count;
-}
-
-int MoveLED(int Dir, int Start, int Count){
-	int TargetLED = Start; // 초기화
-	UINT32 Data ;
-	for(int i =0; i < Count ; i++){
-		TargetLED = TargetLED % 4; //모듈러 연산으로 보정 (범위는 0~3)
-		if(TargetLED == 0) TargetLED = 4; // LED 0이 들어올 경우 4번으로 한다.
-		//target LED만 FF
-		Data = (0x000000FF) << ((4-TargetLED) * BYTE);
-		LEDOnOff(Data);
-		//MyDelay(5);
-		LEDOnOff(0x00000000);
-		(Dir == 0)? TargetLED ++: TargetLED --; // Dir 값에 따라 LED 방향 결정
-	}
-	return TargetLED;
-}
-
-
-
-void LEDOnOff(UINT32 No){
-	// [LED 1] [LED 2] [ LED 3] [LED 4]
-	UINT32 LEDOptionMask = 0x000000F0U; // 4~7번 비트만 1로 줌 (LED옵션을 볼 상위 4비트)
-	UINT32 DurationMask  = 0x0000000FU; // 0~3번 비트만 1로 줌 (Duration을 볼 하위 4비트)
-
-	int DurationArr[4]= {0,0,0,0}; // LED 4개의 Duration을 저장할 배열 (0으로 초기화)
-
-	for(int i = 0 ; i < NumofLEDs ; i++){
-		UINT32 LEDOption = (LEDOptionMask & No) >> ((i*2 +1)* HALFBYTE); // 해당 LED 속성 값 4bit를 뽑아(LEDOptionMask와 &연산) 가장 끝으로 shift(0~3번 bit에 위치하도록)
-		UINT32 Duration  = (DurationMask  & No) >> (  i* 2 *  HALFBYTE); // 해당 LED의 Duration 값 4bit를 뽑아(DurationMask와 &연산) 가장 끝으로 shift(0~3번 bit에 위치하도록)
-
-		// LED Option값에 따라 분기해 DurationArr배열에 값 넣어줌
-		switch(LEDOption){
-			case 0x00: // 해당 LED 끄기
-				DurationArr[3-i] = -2; // 항상 OFF 를 -2으로 표시
-				break;
-			case 0x0F: // 해당 LED 켜기
-				DurationArr[3-i] = -1; // 항상 ON 를 -1으로 표시
-				break;
-			default: // 0 또는 F가 아닌 경우는 듀레이션 주기
-				DurationArr[3-i] = Duration;
-				break;
-		}
-
-		// mask 값 8비트(1바이트)씩 왼쪽 시프트 연산
-		LEDOptionMask <<= BYTE;
-		DurationMask  <<= BYTE;
-	}
-  RunLEDOnDuration(DurationArr); // LED
-}
-
-
-void RunLEDOnDuration(int DurationArr[]){
-
-	// Duration 배열에서 가장 큰 값 찾기
-	int MaxDuration = 0;
-  for (int i = 0; i < NumofLEDs; i++) {
-      if (DurationArr[i] > MaxDuration) MaxDuration = DurationArr[i];
-  }
-
-	do{ // 항상 켜지고 꺼지는 것도 한 번은 실행시키기 위해 do-while문 작성
-		for(int i = 0 ; i < NumofLEDs ; i++){
-			if(DurationArr[i] > 0) TurnOnOneLED(i+1); // Duration이 있는 경우
-			else if(DurationArr[i] == -1) TurnOnOneLED(i+1); // 항상 ON 인 경우
-			else if(DurationArr[i] == -2) TurnOffOneLED(i+1); // 항상 OFF인 경우
-		}
-		MyDelay(5);
-		for(int i = 0 ; i < NumofLEDs ; i++){
-			if(DurationArr[i] > 0){
-				TurnOffOneLED(i+1);
-				DurationArr[i]--;
-			}
-		}
-		//MyDelay(5);
-		MaxDuration--;
-	}while(MaxDuration > 0);
-
-}
-
-
 void TurnOnOneLED(UINT32 No){ // NO 는 1~4 사이의 정수
 	SetOneLED(No);
 	// BSRR reset
@@ -381,7 +267,9 @@ void TurnOffOneLED(UINT32 No){ // NO 는 1~4 사이의 정수
 }
 
 void TurnOnOneLEDWhenButtonPushed(UINT32 ButtonNo, UINT32 LEDNo){
+
 	SetOneButton(ButtonNo);	//Button Setup
+
 	while(1){
 		if(GetIDRforButton(ButtonNo) > 0){ // 버튼 클릭 시
 			TurnOnOneLED(LEDNo);
@@ -390,17 +278,6 @@ void TurnOnOneLEDWhenButtonPushed(UINT32 ButtonNo, UINT32 LEDNo){
 		}
 	}
 }
-
-
-
-void TurnOnLEDUsedforFourBit(UINT32 n){ // n 1~15
-	for(int i = 0; i < 4; i++){
-		if((n & (AndMaskforOneoBit << i) ) > 0){
-			TurnOnOneLED(i+1);
-		}
-	}
-}
-
 
 
 UINT32 GetIDRforButton(UINT32 ButtonNo){
