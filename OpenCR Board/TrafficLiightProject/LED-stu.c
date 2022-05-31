@@ -388,6 +388,23 @@ void ShowBinaryCount(UINT32 count){
 	}
 }
 
+
+// 외부 스위치 버튼이 눌렀다 떼졌는지 체크하는 함수
+int CheckIfOutPushButtonPushedandBack(UINT32 ButtonNo){
+   SetOneButton(ButtonNo);   //Button Setup
+	int flag = 0;
+	while(GetIDRforButton(ButtonNo) > 0 ){ // 버튼 눌러진 상태일 때 block
+		flag = 1; // 한 번이라도 눌러진 상태일 때
+	}	// 뗐을 때 while문 탈출
+	return flag;
+
+}
+
+
+
+
+
+
 void TurnOnOneOutsideLED(UINT32 No, UINT32 Duration){
 	// No = LED번호 (외부의 1~4번)
 	// Duration = 켜져있는 시간 (100ms단위, 10이면 1초)
@@ -528,7 +545,7 @@ void TurnOnOneLEDbyPattern(UINT32 Pattern, UINT32 Duration){
 
 
 int CheckIfButtonPushedandBack(UINT32 ButtonNo){
-   //SetOneButton(ButtonNo);   //Button Setup
+   SetOneButton(ButtonNo);   //Button Setup
 	int flag = 0;
 	while(GetIDRforButton(ButtonNo) > 0 ){ // 버튼 눌러진 상태일 때 block
 		flag = 1; // 한 번이라도 눌러진 상태일 때
@@ -681,6 +698,7 @@ void SetOneButton(UINT32 No){
 }
 
 
+
 UINT32 getBaseAddrforLED(UINT32 LEDNo){ // LED 1~5 (5는 status)
    switch(LEDNo){
       case 1:
@@ -747,17 +765,19 @@ UINT32 getPortforOutGPIO(UINT32 LEDNo){ // 외부 GPIO 1~7
       }
 }
 
-UINT32 getBaseAddrforButton(UINT32 ButtonNo){ // BTN 1~2
+UINT32 getBaseAddrforButton(UINT32 ButtonNo){ // BTN 1~2 내부 , 3은 외부
    switch(ButtonNo){
       case 1: return GPIOC_BASEADDRESS;
       case 2: return GPIOG_BASEADDRESS;
+      case 3: return GPIOF_BASEADDRESS; // 외부 스위치 버튼으로 함!
    }
 }
 
-UINT32 getPortforButton(UINT32 ButtonNo){ // BTN 1~2
+UINT32 getPortforButton(UINT32 ButtonNo){ // BTN 1~2내부, 3은 외부
       switch(ButtonNo){
          case 1: return 12; // PC 12
          case 2: return 3;  // PG  3
+         case 3: return 6;  // PF 6 (외부)
       }
 }
 
