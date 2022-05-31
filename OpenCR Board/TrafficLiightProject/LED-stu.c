@@ -178,7 +178,7 @@ int isInputValid(UINT32 ButtonNo);
 
 
 void SetOneOutLED(UINT32 No);
-UINT32 getBaseAddrforOutLED(UINT32 LEDNo);
+UINT32 getBaseAddrforOutGPIO(UINT32 LEDNo);
 UINT32 getPortforOutGPIO(UINT32 LEDNo);
 
 
@@ -198,6 +198,7 @@ void TurnOffOneGPIO(UINT32 No);
 void ShowBinaryCount(UINT32 count);
 int RunTrafficLight(UINT32 No, UINT32 Duration);
 void Show7Segment(UINT32 displayNum);
+void TurnOffAllOutGPIO();
 
 // ============== my functions ===================
 
@@ -270,24 +271,19 @@ void MyApp()
 
 	int count = 0;   // count(0~15)
 
-
-
 	while(1){
-
 		ShowBinaryCount(count); // 바이너리 카운트 표기
+		count = (count + 1) % 16; // 횟수 증가 및 보정
 
 		for(int i = 0 ; i < 8 ; i++){
 			// 짝수(0) - 7초, 홀수(1) - 2초 -5*(i%2)+7
-		if(RunTrafficLight(  i, -5*(i%2)+7) == 1){
-				count = 0;
+			if(RunTrafficLight(  i, -5*(i%2)+7) == 1){
+					count = 0; // 회로 내부 버튼이 눌린 경우
 			}
 		}
 
-		count = (count + 1) % 16; // 횟수 증가 및 보정
 
 	}
-
-
 }
 
 
@@ -303,6 +299,7 @@ void ClockEnable(UINT32 GPIOPort){
 void MyDelay(UINT32 n){ // 10이 들어오면 1초가 되도록
    V_UINT32 delay;
    for ( delay = 0; delay <= n*RATE; delay++); //
+   HAL_GetTick(); //
 }
 
 
@@ -320,9 +317,9 @@ int RunTrafficLight(UINT32 No, UINT32 Duration){
 	// No는 0~7까지의 숫자
 	// Duration 만큼 반복함 (100ms단위, 10이면 1초)
 	UINT32 waitingTime = Duration * MILLOIN;
-	TurnOffAllInOutLED();   // 내부 LED 4개, 외부 GPIO 4개 모두 Off한 상태로 시작
+	TurnOffAllOutGPIO();   // 외부 GPIO 4개 모두 Off한 상태로 시작
 
-	UINT32 remainTime = 7;
+	UINT32 remainTime = 9;
 	UINT32 pastRemainTime = remainTime;
 
 	while(waitingTime--){
@@ -340,7 +337,7 @@ int RunTrafficLight(UINT32 No, UINT32 Duration){
 
 		switch(No){ // state number 에 따라 분기
 			case 4:
-				remainTime = (waitingTime / MILLOIN) + 1; // 새로 계속 갱신
+				remainTime = (waitingTime / MILLOIN) + 3; // 새로 계속 갱신
 				if(pastRemainTime != remainTime){
 					pastRemainTime = remainTime; // 갱신
 					Show7Segment(remainTime);
@@ -348,17 +345,20 @@ int RunTrafficLight(UINT32 No, UINT32 Duration){
 				break;
 
 			case 5: // 노란 불 2초
+				// trigger pedestrian signal (0이면 초록불 ON, 1이면 초록불 OFF)
+				// No == 5일 때 2초 남아서 blink
+
+				remainTime = (waitingTime / MILLOIN) + 1; // 새로 계속 갱신
+				if(pastRemainTime != remainTime){
+					pastRemainTime = remainTime; // 갱신
+					Show7Segment(remainTime);
+				}
+
 				if( (waitingTime / HUNDREDTHOUSAND) % 2 == 0){
 					TurnOnOneGPIO(4);
 				}else TurnOffOneGPIO(4);
 				break;
 		}
-
-
-		// trigger pedestrian signal (0이면 초록불 ON, 1이면 초록불 OFF)
-		// No == 5일 때 2초 남아서 blink
-
-
 
 	}
 	return 0; // 정상 종료
@@ -376,7 +376,7 @@ void Show7Segment(UINT32 displayNum){
 
 
 void ShowBinaryCount(UINT32 count){
-	TurnOffAllInOutLED();
+	TurnOnAllLED();
 
 	// bit check (000~111)
 	for(int i = 0; i < 4 ;i++){
@@ -452,7 +452,7 @@ void TurnOnOneInsideLEDwith4GPIO(UINT32 InsideNo, UINT32 Duration){
 
 	// ON
 	*((V_UINT32*)(getBaseAddrforLED(InsideNo)+BSRROFFSET))  |= (SETRESET << (getPortforLED(InsideNo)+16));
-	*((V_UINT32*)(getBaseAddrforOutLED(InsideNo)+BSRROFFSET))  |= (SETRESET << getPortforOutGPIO(InsideNo));
+	*((V_UINT32*)(getBaseAddrforOutGPIO(InsideNo)+BSRROFFSET))  |= (SETRESET << getPortforOutGPIO(InsideNo));
 
 	MyDelay(Duration*10);
 }
@@ -541,6 +541,13 @@ void TurnOnAllLED(){
    return;
 }
 
+void TurnOffAllOutGPIO(){
+  for(int i =1 ; i <= 8; i++){
+ 	 TurnOffOneGPIO(i);
+  }
+   return;
+}
+
 void TurnOffAllInOutLED(){
    for(int i =1 ; i <= 4; i++){
       TurnOffOneLED(i);
@@ -563,20 +570,20 @@ void TurnOnOneLED(UINT32 No){ // NO 는 1~4 사이의 정수
 void TurnOnOneOutLED(UINT32 No){
 	SetOneOutLED(No);
 	// BSRR set
-	   *((V_UINT32*)(getBaseAddrforOutLED(No)+BSRROFFSET))  |= (SETRESET << getPortforOutGPIO(No)); // ON
+	   *((V_UINT32*)(getBaseAddrforOutGPIO(No)+BSRROFFSET))  |= (SETRESET << getPortforOutGPIO(No)); // ON
 }
 
 // 외부 GPIO 4 + 4 개 제어
 void TurnOnOneGPIO(UINT32 No){
 	SetOneOutLED(No);
 	// BSRR set
-	   *((V_UINT32*)(getBaseAddrforOutLED(No)+BSRROFFSET))  |= (SETRESET << getPortforOutGPIO(No)); // ON
+	   *((V_UINT32*)(getBaseAddrforOutGPIO(No)+BSRROFFSET))  |= (SETRESET << getPortforOutGPIO(No)); // ON
 }
 
 // 외부 GPIO 4 + 4 개 제어
 void TurnOffOneGPIO(UINT32 No){
 	// BSRR reset
-	   *((V_UINT32*)(getBaseAddrforOutLED(No)+BSRROFFSET))  |= (SETRESET << (getPortforOutGPIO(No)+16)); //OFF
+	   *((V_UINT32*)(getBaseAddrforOutGPIO(No)+BSRROFFSET))  |= (SETRESET << (getPortforOutGPIO(No)+16)); //OFF
 }
 
 void TurnOffOneLED(UINT32 No){ // NO 는 1~4 사이의 정수
@@ -588,7 +595,7 @@ void TurnOffOneLED(UINT32 No){ // NO 는 1~4 사이의 정수
 void TurnOffOneOutLED(UINT32 No){
 	//SetOneOutLED(No);
 	// BSRR reset
-	   *((V_UINT32*)(getBaseAddrforOutLED(No)+BSRROFFSET))  |= (SETRESET << (getPortforOutGPIO(No)+16)); //OFF
+	   *((V_UINT32*)(getBaseAddrforOutGPIO(No)+BSRROFFSET))  |= (SETRESET << (getPortforOutGPIO(No)+16)); //OFF
 }
 
 
@@ -628,16 +635,16 @@ void SetOneLED(UINT32 No){
 
 void SetOneOutLED(UINT32 No){ // 외부 LED 4개 세팅
 	   //MODER OUTPUTMODE
-	   *((V_UINT32*)(getBaseAddrforOutLED(No)+MODEROFFSET))  &= ~(AndMaskforTwoBit << (getPortforOutGPIO(No)*2)); // 해당 2bit를 00으로 초기화
-	   *((V_UINT32*)(getBaseAddrforOutLED(No)+MODEROFFSET))  |=  (OUTPUTMODE       << (getPortforOutGPIO(No)*2)); // 원하는 값을 덮어 씀
+	   *((V_UINT32*)(getBaseAddrforOutGPIO(No)+MODEROFFSET))  &= ~(AndMaskforTwoBit << (getPortforOutGPIO(No)*2)); // 해당 2bit를 00으로 초기화
+	   *((V_UINT32*)(getBaseAddrforOutGPIO(No)+MODEROFFSET))  |=  (OUTPUTMODE       << (getPortforOutGPIO(No)*2)); // 원하는 값을 덮어 씀
 
 	   //OSPEED VERY HIGH
-	   *((V_UINT32*)(getBaseAddrforOutLED(No)+OSPEEDOFFSET)) &= ~(AndMaskforTwoBit << (getPortforOutGPIO(No)*2)); // 해당 2bit를 00으로 초기화
-	   *((V_UINT32*)(getBaseAddrforOutLED(No)+OSPEEDOFFSET)) |=  (VERYHIGHSPEED    << (getPortforOutGPIO(No)*2)); // 원하는 값을 덮어 씀
+	   *((V_UINT32*)(getBaseAddrforOutGPIO(No)+OSPEEDOFFSET)) &= ~(AndMaskforTwoBit << (getPortforOutGPIO(No)*2)); // 해당 2bit를 00으로 초기화
+	   *((V_UINT32*)(getBaseAddrforOutGPIO(No)+OSPEEDOFFSET)) |=  (VERYHIGHSPEED    << (getPortforOutGPIO(No)*2)); // 원하는 값을 덮어 씀
 
 	   //PUPDR PULL UP
-	   *((V_UINT32*)(getBaseAddrforOutLED(No)+PUPDROFFSET))  &= ~(AndMaskforTwoBit << (getPortforOutGPIO(No)*2)); // 해당 2bit를 00으로 초기화
-	   *((V_UINT32*)(getBaseAddrforOutLED(No)+PUPDROFFSET))  |=  (PULLUP           << (getPortforOutGPIO(No)*2)); // 원하는 값을 덮어 씀
+	   *((V_UINT32*)(getBaseAddrforOutGPIO(No)+PUPDROFFSET))  &= ~(AndMaskforTwoBit << (getPortforOutGPIO(No)*2)); // 해당 2bit를 00으로 초기화
+	   *((V_UINT32*)(getBaseAddrforOutGPIO(No)+PUPDROFFSET))  |=  (PULLUP           << (getPortforOutGPIO(No)*2)); // 원하는 값을 덮어 씀
 }
 
 void SetOneGPIO(char GPIO, UINT32 Port){ // 외부 LED 4개 세팅
@@ -683,7 +690,7 @@ UINT32 getBaseAddrforLED(UINT32 LEDNo){ // LED 1~5 (5는 status)
    }
 }
 
-UINT32 getBaseAddrforOutLED(UINT32 LEDNo){ // LED 1~4(외부)
+UINT32 getBaseAddrforOutGPIO(UINT32 LEDNo){ // LED 1~4(외부)
    switch(LEDNo){
       case 1:
       case 2:
