@@ -200,6 +200,7 @@ void ShowBinaryCount(UINT32 count);
 int RunTrafficLight(UINT32 No, UINT32 Duration);
 void Show7Segment(UINT32 displayNum);
 void TurnOffAllOutGPIO();
+int CheckIfOutButtonPushedandBack(UINT32 ButtonNo);
 
 // ============== my functions ===================
 
@@ -270,6 +271,7 @@ void MyApp()
 	InitGPIO(); //G, E, C, F Enable
 	TurnOffAllInOutLED(); // 내부 LED 4개, 외부 LED 4개 모두 Off한 상태로 시작
 
+
 	int count = 0;   // count(0~15)
 
 	while(1){
@@ -315,7 +317,7 @@ void InitGPIO(){
 
 int RunTrafficLight(UINT32 No, UINT32 Duration){
 	// No는 0~7까지의 숫자
-	// Duration 만큼 반복함 (100ms단위, 10이면 1초)
+	// Duration 만큼 반복함 (1은 1초)
 	TurnOffAllOutGPIO();   // 외부 GPIO 4개 모두 Off한 상태로 시작
 
 	UINT32 remainTime = 9;
@@ -328,10 +330,10 @@ int RunTrafficLight(UINT32 No, UINT32 Duration){
 		if(CheckIfButtonPushedandBack(2) == 1){ // SW1 눌렀다 뗐을 때
 			return 1;		// reset
 		}
-		// 외부 SKIP 버튼이 눌렀다 떼 졌는지 체크
-		if(CheckIfButtonPushedandBack(3) == 1){ // 외부 푸시 스위치
-			return 2;		// skip (그냥 바로 리턴)
-		}
+//		// 외부 SKIP 버튼이 눌렀다 떼 졌는지 체크
+//		if(CheckIfOutButtonPushedandBack(3) == 1){ // 외부 푸시 스위치
+//			return 0;		// skip (그냥 바로 리턴)
+//		}
 
 		// bit check (000~111)
 		for(int i = 0; i < 3 ;i++){
@@ -392,7 +394,16 @@ void ShowBinaryCount(UINT32 count){
 int CheckIfButtonPushedandBack(UINT32 ButtonNo){
    SetOneButton(ButtonNo);   //Button Setup
 	int flag = 0;
-	while(GetIDRforButton(ButtonNo) > 0 ){ // 버튼 눌러진 상태일 때 block
+	while((GetIDRforButton(ButtonNo) & (AndMaskforOneBit >> getPortforButton(ButtonNo))) != 0 ){ // 버튼 눌러진 상태일 때 block
+		flag = 1; // 한 번이라도 눌러진 상태일 때
+	}	// 뗐을 때 while문 탈출
+	return flag;
+}
+
+int CheckIfOutButtonPushedandBack(UINT32 ButtonNo){
+   SetOneButton(ButtonNo);   //Button Setup
+	int flag = 0;
+	while((GetIDRforButton(ButtonNo) & (AndMaskforOneBit >> getPortforButton(ButtonNo))) == 0 ){ // 해당 bit가 0인지 검사
 		flag = 1; // 한 번이라도 눌러진 상태일 때
 	}	// 뗐을 때 while문 탈출
 	return flag;
@@ -618,7 +629,7 @@ int isInputValid(UINT32 ButtonNo){
 
 
 UINT32 GetIDRforButton(UINT32 ButtonNo){
-   return (*((V_UINT32*)(getBaseAddrforButton(ButtonNo)+IDROFFSET))) & (0x00000001U << getPortforButton(ButtonNo));
+   return (*((V_UINT32*)(getBaseAddrforButton(ButtonNo)+IDROFFSET))) & (AndMaskforOneBit << getPortforButton(ButtonNo));
 }
 
 void SetOneLED(UINT32 No){
@@ -700,12 +711,12 @@ UINT32 getBaseAddrforOutGPIO(UINT32 LEDNo){ // LED 1~4(외부)
          return GPIOG_BASEADDRESS;
       case 3:
       case 4:
+      case 9:
          return GPIOC_BASEADDRESS;
       case 5:
       case 6:
       case 7:
       case 8:
-      case 9:
       	return GPIOF_BASEADDRESS;
 
    }
@@ -743,7 +754,7 @@ UINT32 getPortforOutGPIO(UINT32 LEDNo){ // 외부 GPIO 1~7
          case 6: return 9;  // PF  9 - GPIO 6 (7 segment)
          case 7: return 8;  // PF  8 - GPIO 7 (7 segment)
          case 8: return 7;  // PF  7 - GPIO 8 (7 segment)
-         case 9: return 6;  // PF  6 - GPIO 9 (Push Switch control)
+         case 9: return 7;  // PC  7 - GPIO 9 (Push Switch control)
       }
 }
 
@@ -751,7 +762,7 @@ UINT32 getBaseAddrforButton(UINT32 ButtonNo){ // BTN 1~2 내부 , 3은 외부
    switch(ButtonNo){
       case 1: return GPIOC_BASEADDRESS;
       case 2: return GPIOG_BASEADDRESS;
-      case 3: return GPIOF_BASEADDRESS; // 외부 스위치 버튼으로 함!
+      case 3: return GPIOC_BASEADDRESS; // 외부 스위치 버튼으로 함!
    }
 }
 
@@ -759,7 +770,7 @@ UINT32 getPortforButton(UINT32 ButtonNo){ // BTN 1~2내부, 3은 외부
       switch(ButtonNo){
          case 1: return 12; // PC 12
          case 2: return 3;  // PG  3
-         case 3: return 6;  // PF 6 (외부)
+         case 3: return 6;  // PC 7 (외부)
       }
 }
 
