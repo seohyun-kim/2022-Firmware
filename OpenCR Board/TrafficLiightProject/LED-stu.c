@@ -57,7 +57,7 @@ typedef unsigned int UINT32;
 #define BYTE 8
 #define NumofLEDs 4
 #define MILLOIN 1000000
-#define HALFMILLOIN 500000
+#define HUNDREDTHOUSAND 100000
 #define HUNDREDms 360000
 #define THOUSANDms 3600000
 
@@ -270,12 +270,15 @@ void MyApp()
 
 	int count = 0;   // count(0~15)
 
+
+
 	while(1){
+
 		ShowBinaryCount(count); // 바이너리 카운트 표기
 
 		for(int i = 0 ; i < 8 ; i++){
 			// 짝수(0) - 7초, 홀수(1) - 2초 -5*(i%2)+7
-		if(RunTrafficLight(  i, 2) == 1){
+		if(RunTrafficLight(  i, -5*(i%2)+7) == 1){
 				count = 0;
 			}
 		}
@@ -319,6 +322,9 @@ int RunTrafficLight(UINT32 No, UINT32 Duration){
 	UINT32 waitingTime = Duration * MILLOIN;
 	TurnOffAllInOutLED();   // 내부 LED 4개, 외부 GPIO 4개 모두 Off한 상태로 시작
 
+	UINT32 remainTime = 7;
+	UINT32 pastRemainTime = remainTime;
+
 	while(waitingTime--){
 
 		// Reset 버튼이 눌렀다 떼 졌는지 체크
@@ -334,14 +340,24 @@ int RunTrafficLight(UINT32 No, UINT32 Duration){
 
 		switch(No){ // state number 에 따라 분기
 			case 4:
-				Show7Segment((waitingTime / MILLOIN) + 1);
+				remainTime = (waitingTime / MILLOIN) + 1; // 새로 계속 갱신
+				if(pastRemainTime != remainTime){
+					pastRemainTime = remainTime; // 갱신
+					Show7Segment(remainTime);
+				}
+				if(remainTime <= 2){
+					if( (waitingTime / HUNDREDTHOUSAND) % 2 == 0){
+						TurnOnOneGPIO(4);
+					}else TurnOffOneGPIO(4);
+				}
+
 				break;
 
-			case 5:
-				if( (waitingTime / HALFMILLOIN) % 2 == 0){
-					TurnOnOneGPIO(4);
-				}else TurnOffOneGPIO(4);
-				break;
+//			case 5:
+//				if( (waitingTime / HUNDREDTHOUSAND) % 2 == 0){
+//					TurnOnOneGPIO(4);
+//				}else TurnOffOneGPIO(4);
+//				break;
 		}
 
 
