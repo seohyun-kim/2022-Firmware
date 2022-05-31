@@ -705,6 +705,7 @@ UINT32 getBaseAddrforOutGPIO(UINT32 LEDNo){ // LED 1~4(외부)
       case 6:
       case 7:
       case 8:
+      case 9:
       	return GPIOF_BASEADDRESS;
 
    }
@@ -717,6 +718,8 @@ UINT32 getBaseAddrfromGPIO(char GPIO){ // LED 1~4(외부)
          return GPIOG_BASEADDRESS;
       case 'C':
          return GPIOC_BASEADDRESS;
+      case 'F':
+      	return GPIOF_BASEADDRESS;
    }
 }
 
@@ -732,14 +735,15 @@ UINT32 getPortforLED(UINT32 LEDNo){ // LED 1~4
 
 UINT32 getPortforOutGPIO(UINT32 LEDNo){ // 외부 GPIO 1~7
       switch(LEDNo){
-         case 1: return 6;  // PG  6 - GPIO 1
-         case 2: return 7;  // PG  7 - GPIO 2
-         case 3: return 1;  // PC  1 - GPIO 3
-         case 4: return 2;  // PC  2 - GPIO 4
-         case 5: return 10; // PF 10 - GPIO 5
-         case 6: return 9;  // PF  9 - GPIO 6
-         case 7: return 8;  // PF  8 - GPIO 7
-         case 8: return 7;  // PF  7 - GPIO 8
+         case 1: return 6;  // PG  6 - GPIO 1 (input A - Traffic light)
+         case 2: return 7;  // PG  7 - GPIO 2 (input B - Traffic light)
+         case 3: return 1;  // PC  1 - GPIO 3 (input C - Traffic light)
+         case 4: return 2;  // PC  2 - GPIO 4 (input D - Light Trigger)
+         case 5: return 10; // PF 10 - GPIO 5 (7 segment)
+         case 6: return 9;  // PF  9 - GPIO 6 (7 segment)
+         case 7: return 8;  // PF  8 - GPIO 7 (7 segment)
+         case 8: return 7;  // PF  7 - GPIO 8 (7 segment)
+         case 9: return 6;  // PF  6 - GPIO 9 (Push Switch control)
       }
 }
 
