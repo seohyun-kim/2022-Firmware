@@ -60,6 +60,7 @@ typedef unsigned int UINT32;
 #define HUNDREDTHOUSAND 100000
 #define HUNDREDms 360000
 #define THOUSANDms 3600000
+#define THOUSAND 1000
 
 /*
    [SYS_USER_LED 1]  |  PG 12  |
@@ -321,8 +322,9 @@ int RunTrafficLight(UINT32 No, UINT32 Duration){
 
 	UINT32 remainTime = 9;
 	UINT32 pastRemainTime = remainTime;
+	UINT32 pastTick = HAL_GetTick();
 
-	while(waitingTime--){
+	while(HAL_GetTick() - pastTick < Duration * THOUSAND ){
 
 		// Reset 버튼이 눌렀다 떼 졌는지 체크
 		if(CheckIfButtonPushedandBack(2) == 1){ // SW1 눌렀다 뗐을 때
@@ -337,7 +339,7 @@ int RunTrafficLight(UINT32 No, UINT32 Duration){
 
 		switch(No){ // state number 에 따라 분기
 			case 4:
-				remainTime = (waitingTime / MILLOIN) + 3; // 새로 계속 갱신
+				remainTime = 9 -((HAL_GetTick() - pastTick) / THOUSAND); // 새로 계속 갱신
 				if(pastRemainTime != remainTime){
 					pastRemainTime = remainTime; // 갱신
 					Show7Segment(remainTime);
@@ -348,13 +350,14 @@ int RunTrafficLight(UINT32 No, UINT32 Duration){
 				// trigger pedestrian signal (0이면 초록불 ON, 1이면 초록불 OFF)
 				// No == 5일 때 2초 남아서 blink
 
-				remainTime = (waitingTime / MILLOIN) + 1; // 새로 계속 갱신
+				remainTime = 2 -((HAL_GetTick() - pastTick) / THOUSAND); // 새로 계속 갱신
+				Show7Segment(remainTime);
 				if(pastRemainTime != remainTime){
 					pastRemainTime = remainTime; // 갱신
 					Show7Segment(remainTime);
 				}
 
-				if( (waitingTime / HUNDREDTHOUSAND) % 2 == 0){
+				if( ((HAL_GetTick() - pastTick) / 200) % 2 == 0){
 					TurnOnOneGPIO(4);
 				}else TurnOffOneGPIO(4);
 				break;
