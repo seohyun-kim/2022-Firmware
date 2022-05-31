@@ -81,10 +81,18 @@ typedef unsigned int UINT32;
 
 
    < 외부 LED 4개 사용 >
-   LED 1 : ARD_D2 - PG 6
-   LED 2 : ARD_D4 - PG 7
-   LED 3 : ARD_D7 - PC 1
-   LED 4 : ARD_D8 - PC 2
+   GPIO 1 : ARD_D2 - PG  6
+   GPIO 2 : ARD_D4 - PG  7
+   GPIO 3 : ARD_D7 - PC  1
+   GPIO 4 : ARD_D8 - PC  2
+
+   GPIO 5 : ARD_A1 - PF 10
+   GPIO 6 : ARD_A2 - PF  9
+   GPIO 7 : ARD_A3 - PF  8
+   GPIO 8 : ARD_A4 - PF  7
+
+   GPIO 9 : ARD_D0 - PC  7
+
 */
 
 //============== m y d e f =================
@@ -113,42 +121,25 @@ int  CheckClockStatus(UINT32 GPIOPort);
 void ClockEnable(UINT32 GPIOPort);
    // 해당 port bit에 clock을 Enable 시킴
 
-void MyDelay(UINT32 n);
-   // n* 100ms 동안 dalay를 줌 (n=5 : 0.5sec)
-
 void InitGPIO();
    // LED제어에 필요한 Clock을 모두 Enable 시키고, LED 1~4를 OFF 시킴
 
-void TurnOnOneLEDb(UINT32 No, char InOut, UINT32 Duration);
-	// 내 외부 해당 LED를 Duration 만큼 1개 키는 함수
-
 void TurnOnAllLED(void ); // 내부 LED 4개 모두 ON
-
+void TurnOffAllLED();  // 내부 LED 4개 모두 OFF
 void TurnOffAllInOutLED(void ); // 내부 외부 4개씩 LED 모두 OFF
-
 
 void TurnOnOneLED(UINT32 No);
    /* 1~4 사이의 숫자 No가 입력되고, 해당 LED를 켠다.
          - SetOneLED() 함수가 내부에서 호출 됨*/
 
-void TurnOnOneOutLED(UINT32 No);
-		/* 1~4 사이의 숫자 No가 입력되고, 해당 "외부" LED를 켠다.
-					- SetOneLED() 함수가 내부에서 호출 됨*/
-
 void TurnOffOneLED(UINT32 No);
    // 1~5 사이의 숫자 No가 입력되고, 해당 LED를 끈다.
-
-void TurnOffOneOutLED(UINT32 No);
-	// 1~5 사이의 숫자 No가 입력되고, 해당 LED를 끈다.
 
 void SetOneLED(UINT32 No);
    /* 1~5 사이의 숫자 No가 입력되고, 해당 LED를 Setting
          - MODER    output 모드(01)
          - OSPEEDR  very high(11)
          - PUPDR    pull up(01)   */
-
-void TurnOnOneLEDWhenButtonPushed(UINT32 ButtonNo, UINT32 LEDNo);
-   // 해당 버튼이 클릭되면 해당 LED를 키는 함수
 
 void SetOneButton(UINT32 No);
    /* 1~2 사이의 숫자 No가 입력되고, 해당 Button을 Setting
@@ -171,35 +162,34 @@ UINT32 getBaseAddrforButton(UINT32 ButtonNo);
 UINT32 getPortforButton(UINT32 ButtonNo);
    // ButtonSwitch 1~2의 GPIO port 번호를 리턴
 
-
-int isInputValid(UINT32 ButtonNo);
-
-
-
-
-
 void SetOneOutLED(UINT32 No);
+
+
 UINT32 getBaseAddrforOutGPIO(UINT32 LEDNo);
 UINT32 getPortforOutGPIO(UINT32 LEDNo);
-
 
 void SetOneGPIO(char GPIO, UINT32 Port);
 UINT32 getBaseAddrfromGPIO(char GPIO);
 
-//int CheckIfButtonPushed(UINT32 ButtonNo);
-void TurnOnOneInsideLED(UINT32 InsideNo, UINT32 Duration);
-void TurnOnOneInsideLEDwith4GPIO(UINT32 InsideNo, UINT32 Duration);
-void TurnOnOneOutsideLED(UINT32 No, UINT32 Duration);
 int CheckIfButtonPushedandBack(UINT32 ButtonNo);
 
-
 void TurnOnOneGPIO(UINT32 No);
+	// 외부 GPIO ON
+
 void TurnOffOneGPIO(UINT32 No);
+	// 외부 GPIO OFF
 
 void ShowBinaryCount(UINT32 count);
+	// 사거리 신호등 1SET마다 count 한 것을 이진 형태로 내부 LED 4개를 통해 점등
+
 int RunTrafficLight(UINT32 No, UINT32 Duration);
+	// 사거리 신호등 구현 함수
+
 void Show7Segment(UINT32 displayNum);
+	// 7 segment 점등 함수
+
 void TurnOffAllOutGPIO();
+	// 모든 외부 GPIO OFF
 
 // ============== my functions ===================
 
@@ -241,9 +231,7 @@ static void SystemClock_Config(void)
   if(HAL_RCC_ClockConfig(&RCC_ClkInitStruct, FLASH_LATENCY_7) != HAL_OK)
   {
     //Error_Handler();
-
   }
-
 }
 
 
@@ -261,7 +249,6 @@ void hwInit(void)
   HAL_Init();
   SystemClock_Config();
 
-
 }
 
 void MyApp()
@@ -278,13 +265,11 @@ void MyApp()
 		count = (count + 1) % 16; // 횟수 증가 및 보정
 
 		for(int i = 0 ; i < 8 ; i++){
-			// 짝수(0) - 7초, 홀수(1) - 2초 -5*(i%2)+7
+			// 짝수(0) - 7초, 홀수(1) - 2초
 			if(RunTrafficLight(  i, -5*(i%2)+7) == 1){
 					count = 0; // 회로 내부 버튼이 눌린 경우
 			}
 		}
-
-
 	}
 }
 
@@ -298,12 +283,7 @@ void ClockEnable(UINT32 GPIOPort){
    *((V_UINT32*)((RCC_BASEADDRESS + RCCOFFSET))) |= ( 0x00000001U << GPIOPort );
 }
 
-void MyDelay(UINT32 n){ // 10이 들어오면 1초가 되도록
-   V_UINT32 delay;
-   for ( delay = 0; delay <= n*RATE; delay++); //
-}
-
-
+// GPIO 의 Clock 상태를 체크하고 Enable 시킴
 void InitGPIO(){
 
    //Clock Status Check & Enable
@@ -313,7 +293,7 @@ void InitGPIO(){
    if(!CheckClockStatus(GPIOF_BIT))   ClockEnable(GPIOF_BIT);
 }
 
-
+// 사거리 신호등 제어 함수
 int RunTrafficLight(UINT32 No, UINT32 Duration){
 	// No는 0~7까지의 숫자
 	// Duration 만큼 반복함 (1은 1초)
@@ -333,9 +313,7 @@ int RunTrafficLight(UINT32 No, UINT32 Duration){
 		if(CheckIfButtonPushedandBack(3) == 1){ // SW2 눌렀다 뗐을 때
 			return 0;		// skip (그냥 바로 리턴)
 		}
-//		if(CheckIfButtonPushedandBack(1) == 1){ // SW2 눌렀다 뗐을 때
-//			return 0;		// skip (그냥 바로 리턴)
-//		}
+
 
 		// bit check (000~111)
 		for(int i = 0; i < 3 ;i++){
@@ -344,7 +322,7 @@ int RunTrafficLight(UINT32 No, UINT32 Duration){
 		}
 
 		switch(No){ // state number 에 따라 분기
-			case 4:
+			case 4: // 보행자 초록불
 				remainTime = 9 -((HAL_GetTick() - pastTick) / THOUSAND); // 새로 계속 갱신
 				if(pastRemainTime != remainTime){
 					pastRemainTime = remainTime; // 갱신
@@ -373,19 +351,18 @@ int RunTrafficLight(UINT32 No, UINT32 Duration){
 	return 0; // 정상 종료
 }
 
-
+// 7 segment를 점등시킴
 void Show7Segment(UINT32 displayNum){
 	// bit check (000~111)
 	for(int i = 0; i < 4 ;i++){
 		if((displayNum >> i) & AndMaskforOneBit) TurnOnOneGPIO(i+5); // 해당 GPIO ON(1)
 		else TurnOffOneGPIO(i+5); // 해당 GPIO OFF(0)
 	}
-
 }
 
+// 내부 LED의 카운트를 바이너리 형태로 점등시킴
 void ShowBinaryCount(UINT32 count){
-	TurnOnAllLED();
-
+	TurnOffAllLED(); // 초기화
 	// bit check (000~111)
 	for(int i = 0; i < 4 ;i++){
 		if((count >> i) & AndMaskforOneBit ) TurnOnOneLED(i+1); // 해당 내부LED ON(1)
@@ -393,6 +370,7 @@ void ShowBinaryCount(UINT32 count){
 	}
 }
 
+// 버튼이 눌렀다 떼 졌는지 체크 (누르는 동안 Blocking)
 int CheckIfButtonPushedandBack(UINT32 ButtonNo){
    SetOneButton(ButtonNo);   //Button Setup
 	int flag = 0;
@@ -403,144 +381,8 @@ int CheckIfButtonPushedandBack(UINT32 ButtonNo){
 }
 
 
-void TurnOnOneOutsideLED(UINT32 No, UINT32 Duration){
-	// No = LED번호 (외부의 1~4번)
-	// Duration = 켜져있는 시간 (100ms단위, 10이면 1초)
-	// 지정된 LED이외에는 나머지 모든 LED를 끄도록 함
 
-	UINT32 waitingTime = Duration * MILLOIN;
-	TurnOffAllInOutLED(); // 내부 LED 4개, 외부 LED 4개 모두 Off한 상태로 시작
-
-	while(waitingTime --){
-		 if(CheckIfButtonPushedandBack(2) == 1){ // SW1 눌렀다 뗐을 때
-			 return;
-		 }
-		 for(int i = 0; i < 4 ;i++){
-			 if((No >> i) & AndMaskforOneBit){
-				 TurnOffOneOutLED(i+1);
-			 }
-			 else{
-				 TurnOnOneOutLED(i+1);
-			 }
-		 }
-	}
-}
-
-void TurnOnOneInsideLED(UINT32 InsideNo, UINT32 Duration){
-	// PG 6 - Input A
-	// PG 7 - Input B
-	// PC 1 - Input C
-
-	/*  A   B   C   | L ED1  LED2  LED3  LED4  |  InsideNo
-	 *  0   0   0   |  O     O      O     X   |     4
-	 *  0   1   1   |  O     O      X     O   |     3
-	 *  1   0   1   |  O     X      O     O   |     2
-	 *  1   1   1   |  X     O      O     O   |     1
-	 * */
-	TurnOffAllInOutLED(); // 내부 LED 4개, 외부 LED 4개 모두 Off 한 상태로 시작
-	TurnOnOneLED(InsideNo);
-
-	switch(InsideNo){
-		case 4:
-			for(int i = 1 ; i <= 3 ; i ++) TurnOffOneOutLED(i);
-			break;
-		case 3:
-			TurnOffOneOutLED(1); // GPIO G6 Off
-			TurnOnOneOutLED(2);
-			TurnOnOneOutLED(3);
-			break;
-		case 2:
-			TurnOnOneOutLED(1);
-			TurnOffOneOutLED(2);
-			TurnOnOneOutLED(3);
-			break;
-		case 1:
-			for(int i = 1 ; i <= 3 ; i ++) TurnOnOneOutLED(i);
-			break;
-	}
-	MyDelay(Duration*10);
-
-}
-
-void TurnOnOneInsideLEDwith4GPIO(UINT32 InsideNo, UINT32 Duration){
-	SetOneLED(InsideNo);
-	SetOneOutLED(InsideNo);
-
-	TurnOffAllInOutLED();
-
-	// ON
-	*((V_UINT32*)(getBaseAddrforLED(InsideNo)+BSRROFFSET))  |= (SETRESET << (getPortforLED(InsideNo)+16));
-	*((V_UINT32*)(getBaseAddrforOutGPIO(InsideNo)+BSRROFFSET))  |= (SETRESET << getPortforOutGPIO(InsideNo));
-
-	MyDelay(Duration*10);
-}
-
-void TurnOnOneLEDb(UINT32 No, char InOut, UINT32 Duration){
-	// No = LED번호 (내 외부의 1~4번)
-	// InOut = 내부 LED인지(I), 외부 LED인지(O)를 구분
-	// Duration = 켜져있는 시간 (100ms단위, 10이면 1초)
-	// 지정된 LED이외에는 나머지 모든 LED를 끄도록 함
-	//
-
-	UINT32 waitingTime = Duration * THOUSANDms;
-	TurnOffAllInOutLED(); // 내부 LED 4개, 외부 LED 4개 모두 Off한 상태로 시작
-
-
-	switch(InOut){
-		case 'I': // 내부 LED
-			while(waitingTime --){
-				 if(CheckIfButtonPushedandBack(2) == 1){ // SW1
-					 waitingTime *= 0.9;
-				 }else if(CheckIfButtonPushedandBack(1) == 1){ // SW2
-					 waitingTime *= 1.1;
-				 }
-				 TurnOnOneLED(No);
-			}
-			break;
-
-		case 'O': // 외부 LED
-			while(waitingTime --){
-				 if(CheckIfButtonPushedandBack(2) == 1){ // SW1
-					 waitingTime *= 0.9;
-				 }else if(CheckIfButtonPushedandBack(1) == 1){ // SW2
-					 waitingTime *= 1.1;
-				 }
-			TurnOnOneOutLED(No);
-			}
-			break;
-	}
-
-}
-
-
-void TurnOnOneLEDbyPattern(UINT32 Pattern, UINT32 Duration){
-	// Pattern | 7 6 5 4 3 2 1 0 |
-	// 4~7 bit 는 각각 외부 LED 1~4
-	// 0~3 bit 는 각각 내부 LED 1~4
-
-	UINT32 waitingTime = Duration * THOUSANDms;
-	UINT32 No = 0;
-
-	while((Pattern >> No) != 1){
-		No++;
-	}
-
-	if(Pattern < 16 ){ // 내부 LED 일때
-		while(waitingTime --){
-			 if(CheckIfButtonPushedandBack(2) == 1){ // SW1
-				 waitingTime *= 0.9;
-			 }else if(CheckIfButtonPushedandBack(1) == 1){ // SW2
-				 waitingTime *= 1.1;
-			 }
-
-			 TurnOnOneLED(No);
-		}
-	}
-
-
-}
-
-
+// 모든 내부 LED 4개 ON
 void TurnOnAllLED(){
    for(int i =1 ; i <= 4; i++){
       TurnOnOneLED(i);
@@ -548,6 +390,15 @@ void TurnOnAllLED(){
    return;
 }
 
+// 모든 내부 LED 4개 OFF
+void TurnOffAllLED(){
+   for(int i =1 ; i <= 4; i++){
+      TurnOffOneLED(i);
+   }
+   return;
+}
+
+// 모든 외부 GPIO 1~8 OFF (초기화)
 void TurnOffAllOutGPIO(){
   for(int i =1 ; i <= 8; i++){
  	 TurnOffOneGPIO(i);
@@ -555,11 +406,12 @@ void TurnOffAllOutGPIO(){
    return;
 }
 
+// 모든 내부, 외부 GPIO OFF
 void TurnOffAllInOutLED(){
    for(int i =1 ; i <= 4; i++){
       TurnOffOneLED(i);
    }
-   for(int i =1 ; i <= 7; i++){
+   for(int i =1 ; i <= 8; i++){
   	 TurnOffOneGPIO(i);
    }
    return;
@@ -573,59 +425,32 @@ void TurnOnOneLED(UINT32 No){ // NO 는 1~4 사이의 정수
    *((V_UINT32*)(getBaseAddrforLED(No)+BSRROFFSET))  |= (SETRESET << (getPortforLED(No)+16));
 }
 
-// 외부 LED 4개 제어
-void TurnOnOneOutLED(UINT32 No){
-	SetOneOutLED(No);
-	// BSRR set
-	   *((V_UINT32*)(getBaseAddrforOutGPIO(No)+BSRROFFSET))  |= (SETRESET << getPortforOutGPIO(No)); // ON
-}
 
-// 외부 GPIO 4 + 4 개 제어
+// 외부 GPIO 9 개 제어
 void TurnOnOneGPIO(UINT32 No){
 	SetOneOutLED(No);
 	// BSRR set
 	   *((V_UINT32*)(getBaseAddrforOutGPIO(No)+BSRROFFSET))  |= (SETRESET << getPortforOutGPIO(No)); // ON
 }
 
-// 외부 GPIO 4 + 4 개 제어
+// 외부 GPIO 9 개 제어
 void TurnOffOneGPIO(UINT32 No){
 	// BSRR reset
 	   *((V_UINT32*)(getBaseAddrforOutGPIO(No)+BSRROFFSET))  |= (SETRESET << (getPortforOutGPIO(No)+16)); //OFF
 }
 
+// 내부 LED 1개 OFF
 void TurnOffOneLED(UINT32 No){ // NO 는 1~4 사이의 정수
    // BSRR set
    *((V_UINT32*)(getBaseAddrforLED(No)+BSRROFFSET))  |= (SETRESET << getPortforLED(No));
 }
 
-// 외부 LED 4개 제어
-void TurnOffOneOutLED(UINT32 No){
-	//SetOneOutLED(No);
-	// BSRR reset
-	   *((V_UINT32*)(getBaseAddrforOutGPIO(No)+BSRROFFSET))  |= (SETRESET << (getPortforOutGPIO(No)+16)); //OFF
-}
-
-
-void TurnOnOneLEDWhenButtonPushed(UINT32 ButtonNo, UINT32 LEDNo){
-   SetOneButton(ButtonNo);   //Button Setup
-   while(1){
-      if(GetIDRforButton(ButtonNo) > 0){ // 버튼 클릭 시
-         TurnOnOneLED(LEDNo);
-      }else{
-         TurnOffOneLED(LEDNo);
-      }
-   }
-}
-
-int isInputValid(UINT32 ButtonNo){
-   return ((GetIDRforButton(ButtonNo) >> getPortforButton(ButtonNo)) == 1);
-}
-
-
+// IDR 값 가져옴
 UINT32 GetIDRforButton(UINT32 ButtonNo){
    return (*((V_UINT32*)(getBaseAddrforButton(ButtonNo)+IDROFFSET))) & (AndMaskforOneBit << getPortforButton(ButtonNo));
 }
 
+// 내부 LED 1개 세팅
 void SetOneLED(UINT32 No){
    //MODER OUTPUTMODE
    *((V_UINT32*)(getBaseAddrforLED(No)+MODEROFFSET))  &= ~(AndMaskforTwoBit << (getPortforLED(No)*2)); // 해당 2bit를 00으로 초기화
@@ -640,7 +465,8 @@ void SetOneLED(UINT32 No){
    *((V_UINT32*)(getBaseAddrforLED(No)+PUPDROFFSET))  |=  (PULLUP           << (getPortforLED(No)*2)); // 원하는 값을 덮어 씀
 }
 
-void SetOneOutLED(UINT32 No){ // 외부 LED 4개 세팅
+// 외부 GPIO 1개 세팅
+void SetOneOutLED(UINT32 No){
 	   //MODER OUTPUTMODE
 	   *((V_UINT32*)(getBaseAddrforOutGPIO(No)+MODEROFFSET))  &= ~(AndMaskforTwoBit << (getPortforOutGPIO(No)*2)); // 해당 2bit를 00으로 초기화
 	   *((V_UINT32*)(getBaseAddrforOutGPIO(No)+MODEROFFSET))  |=  (OUTPUTMODE       << (getPortforOutGPIO(No)*2)); // 원하는 값을 덮어 씀
@@ -669,7 +495,7 @@ void SetOneGPIO(char GPIO, UINT32 Port){ // 외부 LED 4개 세팅
 }
 
 
-
+// 버튼 1개 세팅
 void SetOneButton(UINT32 No){
    //MODER INPUTMODE
    *((V_UINT32*)(getBaseAddrforButton(No)+MODEROFFSET))  &= ~(AndMaskforTwoBit << (getPortforButton(No)*2)); // 해당 2bit를 00으로 초기화
@@ -683,7 +509,6 @@ void SetOneButton(UINT32 No){
    *((V_UINT32*)(getBaseAddrforButton(No)+PUPDROFFSET))  &= ~(AndMaskforTwoBit << (getPortforButton(No)*2)); // 해당 2bit를 00으로 초기화
    *((V_UINT32*)(getBaseAddrforButton(No)+PUPDROFFSET))  |=  (NOPUPD           << (getPortforButton(No)*2)); // 원하는 값을 덮어 씀
 }
-
 
 
 UINT32 getBaseAddrforLED(UINT32 LEDNo){ // LED 1~5 (5는 status)
