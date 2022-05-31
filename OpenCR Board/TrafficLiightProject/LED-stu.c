@@ -345,19 +345,13 @@ int RunTrafficLight(UINT32 No, UINT32 Duration){
 					pastRemainTime = remainTime; // 갱신
 					Show7Segment(remainTime);
 				}
-				if(remainTime <= 2){
-					if( (waitingTime / HUNDREDTHOUSAND) % 2 == 0){
-						TurnOnOneGPIO(4);
-					}else TurnOffOneGPIO(4);
-				}
-
 				break;
 
-//			case 5:
-//				if( (waitingTime / HUNDREDTHOUSAND) % 2 == 0){
-//					TurnOnOneGPIO(4);
-//				}else TurnOffOneGPIO(4);
-//				break;
+			case 5: // 노란 불 2초
+				if( (waitingTime / HUNDREDTHOUSAND) % 2 == 0){
+					TurnOnOneGPIO(4);
+				}else TurnOffOneGPIO(4);
+				break;
 		}
 
 
@@ -373,7 +367,7 @@ int RunTrafficLight(UINT32 No, UINT32 Duration){
 
 void Show7Segment(UINT32 displayNum){
 	// bit check (000~111)
-	for(int i = 0; i < 3 ;i++){
+	for(int i = 0; i < 4 ;i++){
 		if((displayNum >> i) & AndMaskforOneBit) TurnOnOneGPIO(i+5); // 해당 GPIO ON(1)
 		else TurnOffOneGPIO(i+5); // 해당 GPIO OFF(0)
 	}
@@ -572,14 +566,14 @@ void TurnOnOneOutLED(UINT32 No){
 	   *((V_UINT32*)(getBaseAddrforOutLED(No)+BSRROFFSET))  |= (SETRESET << getPortforOutGPIO(No)); // ON
 }
 
-// 외부 GPIO 4 + 3 개 제어
+// 외부 GPIO 4 + 4 개 제어
 void TurnOnOneGPIO(UINT32 No){
 	SetOneOutLED(No);
 	// BSRR set
 	   *((V_UINT32*)(getBaseAddrforOutLED(No)+BSRROFFSET))  |= (SETRESET << getPortforOutGPIO(No)); // ON
 }
 
-// 외부 GPIO 4 + 3 개 제어
+// 외부 GPIO 4 + 4 개 제어
 void TurnOffOneGPIO(UINT32 No){
 	// BSRR reset
 	   *((V_UINT32*)(getBaseAddrforOutLED(No)+BSRROFFSET))  |= (SETRESET << (getPortforOutGPIO(No)+16)); //OFF
@@ -700,6 +694,7 @@ UINT32 getBaseAddrforOutLED(UINT32 LEDNo){ // LED 1~4(외부)
       case 5:
       case 6:
       case 7:
+      case 8:
       	return GPIOF_BASEADDRESS;
 
    }
@@ -734,6 +729,7 @@ UINT32 getPortforOutGPIO(UINT32 LEDNo){ // 외부 GPIO 1~7
          case 5: return 10; // PF 10 - GPIO 5
          case 6: return 9;  // PF  9 - GPIO 6
          case 7: return 8;  // PF  8 - GPIO 7
+         case 8: return 7;  // PF  7 - GPIO 8
       }
 }
 
