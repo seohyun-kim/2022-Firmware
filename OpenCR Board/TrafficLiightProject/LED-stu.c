@@ -377,7 +377,6 @@ void Show7Segment(UINT32 displayNum){
 
 }
 
-
 void ShowBinaryCount(UINT32 count){
 	TurnOnAllLED();
 
@@ -388,22 +387,14 @@ void ShowBinaryCount(UINT32 count){
 	}
 }
 
-
-// 외부 스위치 버튼이 눌렀다 떼졌는지 체크하는 함수
-int CheckIfOutPushButtonPushedandBack(UINT32 ButtonNo){
+int CheckIfButtonPushedandBack(UINT32 ButtonNo){
    SetOneButton(ButtonNo);   //Button Setup
 	int flag = 0;
 	while(GetIDRforButton(ButtonNo) > 0 ){ // 버튼 눌러진 상태일 때 block
 		flag = 1; // 한 번이라도 눌러진 상태일 때
 	}	// 뗐을 때 while문 탈출
 	return flag;
-
 }
-
-
-
-
-
 
 void TurnOnOneOutsideLED(UINT32 No, UINT32 Duration){
 	// No = LED번호 (외부의 1~4번)
@@ -542,17 +533,6 @@ void TurnOnOneLEDbyPattern(UINT32 Pattern, UINT32 Duration){
 
 }
 
-
-
-int CheckIfButtonPushedandBack(UINT32 ButtonNo){
-   SetOneButton(ButtonNo);   //Button Setup
-	int flag = 0;
-	while(GetIDRforButton(ButtonNo) > 0 ){ // 버튼 눌러진 상태일 때 block
-		flag = 1; // 한 번이라도 눌러진 상태일 때
-	}	// 뗐을 때 while문 탈출
-	return flag;
-
-}
 
 void TurnOnAllLED(){
    for(int i =1 ; i <= 4; i++){
