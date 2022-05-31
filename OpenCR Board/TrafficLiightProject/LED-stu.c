@@ -200,7 +200,6 @@ void ShowBinaryCount(UINT32 count);
 int RunTrafficLight(UINT32 No, UINT32 Duration);
 void Show7Segment(UINT32 displayNum);
 void TurnOffAllOutGPIO();
-int CheckIfOutButtonPushedandBack(UINT32 ButtonNo);
 
 // ============== my functions ===================
 
@@ -330,8 +329,11 @@ int RunTrafficLight(UINT32 No, UINT32 Duration){
 		if(CheckIfButtonPushedandBack(2) == 1){ // SW1 눌렀다 뗐을 때
 			return 1;		// reset
 		}
-//		// 외부 SKIP 버튼이 눌렀다 떼 졌는지 체크
-//		if(CheckIfOutButtonPushedandBack(3) == 1){ // 외부 푸시 스위치
+		// 외부 SKIP 버튼이 눌렀다 떼 졌는지 체크
+		if(CheckIfButtonPushedandBack(3) == 1){ // SW2 눌렀다 뗐을 때
+			return 0;		// skip (그냥 바로 리턴)
+		}
+//		if(CheckIfButtonPushedandBack(1) == 1){ // SW2 눌렀다 뗐을 때
 //			return 0;		// skip (그냥 바로 리턴)
 //		}
 
@@ -394,20 +396,12 @@ void ShowBinaryCount(UINT32 count){
 int CheckIfButtonPushedandBack(UINT32 ButtonNo){
    SetOneButton(ButtonNo);   //Button Setup
 	int flag = 0;
-	while((GetIDRforButton(ButtonNo) & (AndMaskforOneBit >> getPortforButton(ButtonNo))) != 0 ){ // 버튼 눌러진 상태일 때 block
+	while( GetIDRforButton(ButtonNo)> 0 ){ // 버튼 눌러진 상태일 때 block
 		flag = 1; // 한 번이라도 눌러진 상태일 때
 	}	// 뗐을 때 while문 탈출
 	return flag;
 }
 
-int CheckIfOutButtonPushedandBack(UINT32 ButtonNo){
-   SetOneButton(ButtonNo);   //Button Setup
-	int flag = 0;
-	while((GetIDRforButton(ButtonNo) & (AndMaskforOneBit >> getPortforButton(ButtonNo))) == 0 ){ // 해당 bit가 0인지 검사
-		flag = 1; // 한 번이라도 눌러진 상태일 때
-	}	// 뗐을 때 while문 탈출
-	return flag;
-}
 
 void TurnOnOneOutsideLED(UINT32 No, UINT32 Duration){
 	// No = LED번호 (외부의 1~4번)
@@ -770,7 +764,7 @@ UINT32 getPortforButton(UINT32 ButtonNo){ // BTN 1~2내부, 3은 외부
       switch(ButtonNo){
          case 1: return 12; // PC 12
          case 2: return 3;  // PG  3
-         case 3: return 6;  // PC 7 (외부)
+         case 3: return 7;  // PC 7 (외부)
       }
 }
 
