@@ -300,7 +300,6 @@ void ClockEnable(UINT32 GPIOPort){
 void MyDelay(UINT32 n){ // 10이 들어오면 1초가 되도록
    V_UINT32 delay;
    for ( delay = 0; delay <= n*RATE; delay++); //
-   HAL_GetTick(); //
 }
 
 
@@ -317,7 +316,6 @@ void InitGPIO(){
 int RunTrafficLight(UINT32 No, UINT32 Duration){
 	// No는 0~7까지의 숫자
 	// Duration 만큼 반복함 (100ms단위, 10이면 1초)
-	UINT32 waitingTime = Duration * MILLOIN;
 	TurnOffAllOutGPIO();   // 외부 GPIO 4개 모두 Off한 상태로 시작
 
 	UINT32 remainTime = 9;
@@ -329,6 +327,10 @@ int RunTrafficLight(UINT32 No, UINT32 Duration){
 		// Reset 버튼이 눌렀다 떼 졌는지 체크
 		if(CheckIfButtonPushedandBack(2) == 1){ // SW1 눌렀다 뗐을 때
 			return 1;		// reset
+		}
+		// 외부 SKIP 버튼이 눌렀다 떼 졌는지 체크
+		if(CheckIfButtonPushedandBack(3) == 1){ // 외부 푸시 스위치
+			return 2;		// skip (그냥 바로 리턴)
 		}
 
 		// bit check (000~111)
