@@ -260,19 +260,19 @@ void MyApp()
    while(1){
       TurnOffOneGPIO(1);
       TurnOffOneGPIO(2);
-      MyDelay(1);
+      MyDelay(5);
 
       TurnOffOneGPIO(1);
       TurnOnOneGPIO(2);
-      MyDelay(1);
+      MyDelay(5);
 
       TurnOnOneGPIO(1);
       TurnOffOneGPIO(2);
-      MyDelay(1);
+      MyDelay(5);
 
       TurnOnOneGPIO(1);
       TurnOnOneGPIO(2);
-      MyDelay(1);
+      MyDelay(5);
 
 
    }
