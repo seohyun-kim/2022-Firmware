@@ -1,5 +1,12 @@
 # 내부, 외부 LED 4개씩 제어하기
 
+
+![image](https://user-images.githubusercontent.com/61939286/173383725-50dfa0cd-d8aa-41a5-bcc5-ec4c24508a74.png)
+
+![image](https://user-images.githubusercontent.com/61939286/173383742-306516af-a1d7-4b6f-b33d-db921602e231.png)
+
+
+
 ![image](https://user-images.githubusercontent.com/61939286/168562324-4c2db5bf-3daa-4900-91de-a5475206f512.png)
 
 
